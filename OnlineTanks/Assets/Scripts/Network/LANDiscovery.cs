@@ -12,15 +12,19 @@ public class DiscoveryRequest : NetworkMessage { }
 public class DiscoveryResponse : NetworkMessage
 {
     public long serverId;
-    public Uri uri;
+    public string roomName; //房间名
+    public string uri;
 }
 
 public class LANDiscovery : NetworkDiscoveryBase<DiscoveryRequest, DiscoveryResponse>
 {
+    public string currentRoomName = "新建房间名"; // 当前房间名
+
     public Action<DiscoveryResponse, IPEndPoint> OnServerFoundCustom;
 
     protected override DiscoveryRequest GetRequest()
     {
+        Debug.Log($"服务器房间名: {currentRoomName}");
         return new DiscoveryRequest();
     }
 
@@ -29,7 +33,8 @@ public class LANDiscovery : NetworkDiscoveryBase<DiscoveryRequest, DiscoveryResp
         return new DiscoveryResponse
         {
             serverId = ServerId,
-            uri = transport.ServerUri()
+            roomName = currentRoomName,
+            uri = transport.ServerUri().ToString()
         };
     }
 
