@@ -674,6 +674,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e8a04fd7462ab646aa36eb7b8362473, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  DontDestroy:
+  - {fileID: 2120307607}
+  - {fileID: 570921646}
+  - {fileID: 1656332933}
+  - {fileID: 1967586146}
+  - {fileID: 629941607}
+  - {fileID: 634035983}
+  - {fileID: 135195175}
+  LobbyCanvas: {fileID: 135195175}
 --- !u!4 &340040557
 Transform:
   m_ObjectHideFlags: 0
@@ -3985,8 +3994,8 @@ MonoBehaviour:
   headlessStartMode: 0
   editorAutoStart: 0
   sendRate: 60
-  offlineScene: 
-  onlineScene: 
+  offlineScene: Assets/Scenes/Lobby.unity
+  onlineScene: Assets/Scenes/Game.unity
   offlineSceneLoadDelay: 0
   transport: {fileID: 1202466555}
   networkAddress: meowgame.cloud
@@ -3994,7 +4003,7 @@ MonoBehaviour:
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 0}
-  playerPrefab: {fileID: 0}
+  playerPrefab: {fileID: 1496877014486293102, guid: 96396d1e4b7565943b23fa6ce07a55d6, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
