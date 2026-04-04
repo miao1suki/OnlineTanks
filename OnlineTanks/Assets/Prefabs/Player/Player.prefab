@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2993834107127556100}
   - component: {fileID: 4509323362491132769}
   - component: {fileID: 3444868687558141770}
+  - component: {fileID: 2896466231805468983}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -124,6 +125,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375ec2fa7441d594a9eb00a94db16ccb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankStateMachine
+--- !u!114 &2896466231805468983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496877014486293102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa756f4021746fd4daa3a757d657ce03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerData
 --- !u!1 &5613173827600863726
 GameObject:
   m_ObjectHideFlags: 0

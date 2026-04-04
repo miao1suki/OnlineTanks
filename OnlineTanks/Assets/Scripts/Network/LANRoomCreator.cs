@@ -22,7 +22,7 @@ public class LANRoomCreator : MonoBehaviour
         discovery.currentRoomName = string.IsNullOrWhiteSpace(roomName) ? "新建房间名" : roomName;
 
         // 启动服务器
-        networkManager.StartServer();
+        networkManager.StartHost();
         Debug.Log("局域网房间已创建，服务器启动");
 
         // 开始广播，让局域网其他客户端发现

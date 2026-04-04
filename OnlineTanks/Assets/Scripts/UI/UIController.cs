@@ -10,7 +10,9 @@ public class UIController : MonoBehaviour
     public GameObject roomItemPrefab; // 房间UI预制体
     public GameObject roomListParent; // 列表父物体
     public Button searchButton;            // 搜索按钮
- 
+    public TMP_InputField nameInput; // 名字输入框
+    public static string LocalPlayerName = "Player";
+
     private LANDiscovery discovery;
     HashSet<string> discovered = new HashSet<string>(); //房间去重
 
@@ -25,7 +27,13 @@ public class UIController : MonoBehaviour
 
             if (searchButton != null)
                 searchButton.onClick.AddListener(OnClickSearch);
-        
+
+        if (nameInput != null)
+        {
+            nameInput.onValueChanged.AddListener(OnNameChanged); // 监听输入
+            Debug.Log("已监听输入");
+        }
+
     }
 
     // 点击搜索按钮
@@ -77,5 +85,32 @@ public class UIController : MonoBehaviour
 
         NetworkManager.singleton.networkAddress = address;
         NetworkManager.singleton.StartClient();
+    }
+
+    void OnNameChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        LocalPlayerName = value;
+
+        Debug.Log("本地保存名字: " + value);
+
+        // 如果已经连接，再发送
+        TrySendNameToServer();
+    }
+
+    void TrySendNameToServer()
+    {
+        if (NetworkClient.localPlayer == null)
+            return;
+
+        PlayerData player = NetworkClient.localPlayer.GetComponent<PlayerData>();
+        if (player == null)
+            return;
+
+        Debug.Log("发送名字到服务器: " + LocalPlayerName);
+
+        player.CmdSetName(LocalPlayerName);
     }
 }
