@@ -15,19 +15,17 @@ public class UIController : MonoBehaviour
     public PlayerPreview preview;
     public static string LocalPlayerName = "Player";
 
-    private LANDiscovery discovery;
     HashSet<string> discovered = new HashSet<string>(); //房间去重
 
     private void Awake()
-    {       
-            discovery = FindFirstObjectByType<LANDiscovery>();
+    {
+        //监听 RoomService
+        if (RoomService.Instance != null)
+        {
+            RoomService.Instance.OnRoomFound += OnServerFound;
+        }
 
-            if (discovery != null)
-            {
-                discovery.OnServerFoundCustom += OnServerFound; // 订阅回调
-            }
-
-            if (searchButton != null)
+        if (searchButton != null)
                 searchButton.onClick.AddListener(OnClickSearch);
 
         if (nameInput != null)
@@ -37,6 +35,14 @@ public class UIController : MonoBehaviour
         }
 
     }
+    private void OnDestroy()
+    {
+        // 防止事件泄漏
+        if (RoomService.Instance != null)
+        {
+            RoomService.Instance.OnRoomFound -= OnServerFound;
+        }
+    }
 
     // 点击搜索按钮
     public void OnClickSearch()
@@ -45,7 +51,7 @@ public class UIController : MonoBehaviour
 
         ClearRoomList();
 
-        discovery?.StartDiscovery(); // 开始搜索
+        RoomService.Instance?.StartSearch(); // 开始搜索
     }
 
     // 收到服务器回应
@@ -61,15 +67,12 @@ public class UIController : MonoBehaviour
 
         item.roomNameText.text = info.roomName;  //在房间文本显示房间名
 
-        Debug.Log("需撰写房间名：" +info.roomName + "写后房间名：" + item.roomNameText.text);
 
         item.joinButton.onClick.AddListener(() =>
         {
             ConnectToServer(address);
         });
     }
-
-   
 
     void ClearRoomList()
     {
@@ -85,8 +88,7 @@ public class UIController : MonoBehaviour
     {
         Debug.Log("连接服务器: " + address);
 
-        NetworkManager.singleton.networkAddress = address;
-        NetworkManager.singleton.StartClient();
+        RoomService.Instance?.Connect(address);
     }
 
     void OnNameChanged(string value)
