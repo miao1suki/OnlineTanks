@@ -44,6 +44,15 @@ public class UIController : MonoBehaviour
         }
     }
 
+    public void OnClickLAN()
+    {
+        RoomService.Instance.SetModeLAN();
+    }
+    public void OnClickServer()
+    {
+        RoomService.Instance.SetModeServer();
+    }
+
     // 点击搜索按钮
     public void OnClickSearch()
     {
@@ -51,7 +60,7 @@ public class UIController : MonoBehaviour
 
         ClearRoomList();
 
-        RoomService.Instance?.StartSearch(); // 开始搜索
+        RoomService.Instance?.StartSearchLAN(); // 开始搜索
     }
 
     // 收到服务器回应
