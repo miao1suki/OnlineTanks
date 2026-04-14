@@ -11,6 +11,7 @@ public class UIController : MonoBehaviour
     public GameObject roomListParent; // 列表父物体
     public Button searchButton;            // 搜索按钮
     public TMP_InputField nameInput; // 名字输入框
+    public static int LocalColorIndex = 0;// 本地玩家颜色（默认绿色）
     public static string LocalPlayerName = "Player";
 
     private LANDiscovery discovery;
@@ -112,5 +113,27 @@ public class UIController : MonoBehaviour
         Debug.Log("发送名字到服务器: " + LocalPlayerName);
 
         player.CmdSetName(LocalPlayerName);
+    }
+
+    public void OnClickSelectColor(int index)
+    {
+        LocalColorIndex = index;
+
+        Debug.Log("选择颜色ID: " + index);
+
+        TrySendColorToServer();
+    }
+
+    void TrySendColorToServer()
+    {
+        if (NetworkClient.localPlayer == null)
+            return;
+
+        PlayerData player = NetworkClient.localPlayer.GetComponent<PlayerData>();
+
+        if (player == null)
+            return;
+
+        player.CmdSetColor(LocalColorIndex);
     }
 }
