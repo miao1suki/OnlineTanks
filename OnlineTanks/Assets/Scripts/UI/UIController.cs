@@ -12,6 +12,7 @@ public class UIController : MonoBehaviour
     public Button searchButton;            // 搜索按钮
     public TMP_InputField nameInput; // 名字输入框
     public static int LocalColorIndex = 0;// 本地玩家颜色（默认绿色）
+    public PlayerPreview preview;
     public static string LocalPlayerName = "Player";
 
     private LANDiscovery discovery;
@@ -93,47 +94,20 @@ public class UIController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(value))
             return;
 
-        LocalPlayerName = value;
+        LocalPlayerData.PlayerName = value;
 
         Debug.Log("本地保存名字: " + value);
 
-        // 如果已经连接，再发送
-        TrySendNameToServer();
     }
-
-    void TrySendNameToServer()
-    {
-        if (NetworkClient.localPlayer == null)
-            return;
-
-        PlayerData player = NetworkClient.localPlayer.GetComponent<PlayerData>();
-        if (player == null)
-            return;
-
-        Debug.Log("发送名字到服务器: " + LocalPlayerName);
-
-        player.CmdSetName(LocalPlayerName);
-    }
+ 
 
     public void OnClickSelectColor(int index)
     {
-        LocalColorIndex = index;
+        LocalPlayerData.ColorIndex = index;
 
         Debug.Log("选择颜色ID: " + index);
-
-        TrySendColorToServer();
+        // 更新预览
+        preview?.ApplyColor(index);
     }
-
-    void TrySendColorToServer()
-    {
-        if (NetworkClient.localPlayer == null)
-            return;
-
-        PlayerData player = NetworkClient.localPlayer.GetComponent<PlayerData>();
-
-        if (player == null)
-            return;
-
-        player.CmdSetColor(LocalColorIndex);
-    }
+   
 }

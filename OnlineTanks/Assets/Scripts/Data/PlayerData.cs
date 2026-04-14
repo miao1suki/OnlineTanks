@@ -5,15 +5,17 @@ public class PlayerData : NetworkBehaviour
 {
     [SyncVar(hook = nameof(OnNameChanged))]
     public string playerName;
+
     [SyncVar(hook = nameof(OnColorChanged))]
     public int colorIndex;
 
     public SpriteRenderer[] renderers;
 
-    // 初始化显示
     public override void OnStartClient()
     {
         base.OnStartClient();
+
+        // 初始化
         OnColorChanged(colorIndex, colorIndex);
     }
 
@@ -21,22 +23,21 @@ public class PlayerData : NetworkBehaviour
     {
         base.OnStartLocalPlayer();
 
-        Debug.Log("本地玩家生成，发送名字");
-
-        string name = UIController.LocalPlayerName;
-
-        if (!string.IsNullOrWhiteSpace(name))
-        {
-            CmdSetName(name);
-        }
-        CmdSetColor(UIController.LocalColorIndex);
+        CmdSetName(LocalPlayerData.PlayerName);
+        CmdSetColor(LocalPlayerData.ColorIndex);
     }
 
-    // 名字变化时（自动在客户端触发）
     void OnNameChanged(string oldName, string newName)
     {
         Debug.Log($"名字更新: {newName}");
-        // 更新UI
+    }
+
+    void OnColorChanged(int oldIndex, int newIndex)
+    {
+        if (newIndex < 0 || newIndex >= PlayerColorConfig.Colors.Length)
+            return;
+
+        ApplyColor(PlayerColorConfig.Colors[newIndex]);
     }
 
     [Command]
@@ -45,18 +46,11 @@ public class PlayerData : NetworkBehaviour
         playerName = name;
     }
 
-    // 颜色变化时
-    void OnColorChanged(int oldIndex, int newIndex)
-    {
-        Color color = PlayerColorConfig.Colors[newIndex];
-
-        ApplyColor(color);
-    }
-
     [Command]
     public void CmdSetColor(int index)
     {
-        if (colorIndex == index) return;
+        if (index < 0 || index >= PlayerColorConfig.Colors.Length)
+            return;
 
         colorIndex = index;
     }
