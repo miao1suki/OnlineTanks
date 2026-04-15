@@ -21,9 +21,10 @@ public class OnlineService : MonoBehaviour
 
     IEnumerator RequestRoomList()
     {
-        string url = "http://meowgame.cloud/api/rooms";
+        string url = "https://meowgame.cloud/api/rooms";
 
         UnityWebRequest www = UnityWebRequest.Get(url);
+        www.certificateHandler = new IgnoreSSL();
         yield return www.SendWebRequest();
 
         if (www.result != UnityWebRequest.Result.Success)
@@ -33,11 +34,17 @@ public class OnlineService : MonoBehaviour
         }
 
         string json = www.downloadHandler.text;
+        Debug.Log("房间数据: " + json);
 
-        // 假设返回数组
-        RoomInfo[] rooms = JsonHelper.FromJson<RoomInfo>(json);
+        RoomListResponse data = JsonUtility.FromJson<RoomListResponse>(json);
 
-        foreach (var room in rooms)
+        if (data == null || data.rooms == null)
+        {
+            Debug.LogError("房间解析失败");
+            yield break;
+        }
+
+        foreach (var room in data.rooms)
         {
             OnRoomFound?.Invoke(room);
         }
@@ -48,4 +55,9 @@ public class OnlineService : MonoBehaviour
         NetworkManager.singleton.networkAddress = room.address;
         NetworkManager.singleton.StartClient();
     }
+}
+[System.Serializable]
+public class RoomListResponse
+{
+    public RoomInfo[] rooms;
 }

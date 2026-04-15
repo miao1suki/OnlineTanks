@@ -47,17 +47,24 @@ public class RoomService : MonoBehaviour
         Debug.Log("已切换到 Server 模式（HTTP房间）");
     }
 
-    // ========================
-    // LAN模式：搜索房间
-    // ========================
+    public void StartSearch()
+    {
+        if (mode == RoomMode.LAN)
+            StartSearchLAN();
+        else
+            StartSearchServer();
+    }
+
+    // LAN模式
+
     public void StartSearchLAN()
     {
         discovery?.StartDiscovery();
     }
 
-    // ========================
-    // Server模式：预留接口（后面HTTP用）
-    // ========================
+
+    // Server模式
+
     public void StartSearchServer()
     {
         if (mode != RoomMode.Server)
@@ -66,8 +73,21 @@ public class RoomService : MonoBehaviour
             return;
         }
 
-        Debug.Log("Server模式：准备请求HTTP房间列表");
-        // TODO: 后面接 OnlineService
+        OnlineService.Instance.OnRoomFound = null;
+        OnlineService.Instance.OnRoomFound += (room) =>
+        {
+            Debug.Log("HTTP房间: " + room.roomName);
+
+            OnRoomFound?.Invoke(
+                null,
+                new IPEndPoint(
+                    Dns.GetHostAddresses(room.address)[0],
+                    room.port
+                )
+            );
+        };
+
+        OnlineService.Instance.GetRoomList();
     }
 
     public void Connect(string address)

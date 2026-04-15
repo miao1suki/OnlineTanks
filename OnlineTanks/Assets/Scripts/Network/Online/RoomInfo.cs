@@ -1,3 +1,4 @@
+[System.Serializable]
 public class RoomInfo
 {
     public string roomName;
@@ -5,4 +6,5 @@ public class RoomInfo
     public int port;
     public int playerCount;
     public int maxPlayers;
+    public long lastUpdate;
 }

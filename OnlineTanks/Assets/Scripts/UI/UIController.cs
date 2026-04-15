@@ -56,11 +56,12 @@ public class UIController : MonoBehaviour
     // 点击搜索按钮
     public void OnClickSearch()
     {
-        Debug.Log("开始搜索局域网房间");
+        Debug.Log("开始搜索房间");
 
         ClearRoomList();
 
-        RoomService.Instance?.StartSearchLAN(); // 开始搜索
+        // 开始搜索
+        RoomService.Instance.StartSearch();
     }
 
     // 收到服务器回应
@@ -74,7 +75,8 @@ public class UIController : MonoBehaviour
         GameObject itemGO = Instantiate(roomItemPrefab, roomListParent.transform ,false);
         RoomItem item = itemGO.GetComponent<RoomItem>();
 
-        item.roomNameText.text = info.roomName;  //在房间文本显示房间名
+        string roomName = info != null ? info.roomName : address;
+        item.roomNameText.text = roomName;  //在房间文本显示房间名
 
 
         item.joinButton.onClick.AddListener(() =>
