@@ -6715,12 +6715,12 @@ MonoBehaviour:
   runInBackground: 1
   headlessStartMode: 0
   editorAutoStart: 0
-  sendRate: 60
+  sendRate: 120
   offlineScene: Assets/Scenes/Lobby.unity
   onlineScene: Assets/Scenes/Game.unity
   offlineSceneLoadDelay: 0
   transport: {fileID: 1202466555}
-  networkAddress: meowgame.cloud
+  networkAddress: 62.234.93.20
   maxConnections: 100
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60

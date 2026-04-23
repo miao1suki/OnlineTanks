@@ -5,86 +5,159 @@ using UnityEngine.InputSystem;
 public class PlayerController : NetworkBehaviour
 {
     public float moveSpeed = 5f;
-    public float turnSpeed = 180f;
+    public float turnTorque = 180f;
 
-    private PlayerInputHandler input;
-    private PlayerStateMachine stateMachine;
+    PlayerInputHandler input;
 
     [SyncVar] Vector3 syncPos;
     [SyncVar] Quaternion syncRot;
 
-    public PlayerInputHandler Input => input;
+    float currentAngle;
+    float turnVelocity;
+
+    Rigidbody2D rb; 
+
+    void Awake()
+    {
+        input = GetComponent<PlayerInputHandler>();
+        rb = GetComponent<Rigidbody2D>(); 
+    }
 
     void Start()
     {
-        input = GetComponent<PlayerInputHandler>();
-
-        if (isServer)
+        if (!isLocalPlayer)
         {
-            stateMachine = new PlayerStateMachine(this);
-            stateMachine.ChangeState(new MoveState(this));
+            rb.simulated = false;
         }
     }
 
     void Update()
     {
-        // 本地只负责上传输入
-        if (isLocalPlayer)
-        {
-            CmdSendInput(input.MoveInput, input.LookInput);
-        }
+        if (!isLocalPlayer) return;
 
-        // 服务器执行状态机
-        if (isServer)
-        {
-            stateMachine?.Update();
-            syncPos = transform.position;
-            syncRot = transform.rotation;
-        }
+        Vector2 move = input.MoveInput;
+        Vector2 look = CalculateLookDirection();
 
-        // 客户端插值
-        if (!isServer)
-        {
-            transform.position = Vector3.Lerp(transform.position, syncPos, Time.deltaTime * 10);
-            transform.rotation = Quaternion.Slerp(transform.rotation, syncRot, Time.deltaTime * 10);
-        }
+        // 本地预测
+        ClientPredict(move, look);
+
+        // 发给服务器
+        CmdSendInput(move, look);
     }
 
+    Vector2 CalculateLookDirection()
+    {
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+
+        Vector2 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
+
+        return (worldPos - (Vector2)transform.position).normalized;
+    }
+
+    // 客户端预测
+    void ClientPredict(Vector2 move, Vector2 look)
+    {
+        Vector2 targetDir = look;
+
+        if (targetDir.sqrMagnitude > 0.001f)
+        {
+            float targetAngle =
+                Mathf.Atan2(targetDir.x, targetDir.y) *
+                Mathf.Rad2Deg;
+
+            currentAngle = Mathf.SmoothDampAngle(
+                currentAngle,
+                targetAngle,
+                ref turnVelocity,
+                0.08f
+            );
+        }
+
+        currentAngle -= move.x * -turnTorque * Time.deltaTime;
+
+        transform.rotation =
+            Quaternion.Euler(0, 0, -currentAngle);
+
+        Vector2 forward = new Vector2(
+            Mathf.Sin(currentAngle * Mathf.Deg2Rad),
+            Mathf.Cos(currentAngle * Mathf.Deg2Rad)
+        );
+
+        Vector2 moveDir = forward * move.y;
+
+        rb.linearVelocity = moveDir * moveSpeed;
+    }
+
+    // ===== 只负责上传输入 =====
     [Command]
     void CmdSendInput(Vector2 move, Vector2 look)
     {
-        input.MoveInput = move;
-        input.LookInput = look;
+        ServerSimulate(move, look);
+
+        syncPos = transform.position;
+        syncRot = transform.rotation;
     }
 
-    // 给状态机调用（服务器执行）
-    public void ServerMove(Vector2 move, Vector2 look)
+    // ===== 服务器唯一模拟 =====
+    void ServerSimulate(Vector2 move, Vector2 look)
     {
-        // 鼠标朝向
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-        Plane plane = new Plane(Vector3.up, Vector3.zero);
+        Vector2 targetDir = look;
 
-        if (plane.Raycast(ray, out float distance))
+        // 旋转（平滑朝向）
+        if (targetDir.sqrMagnitude > 0.001f)
         {
-            Vector3 hit = ray.GetPoint(distance);
-            Vector3 dir = hit - transform.position;
-            dir.y = 0;
+            float targetAngle = Mathf.Atan2(targetDir.x, targetDir.y) * Mathf.Rad2Deg;
 
-            if (dir != Vector3.zero)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    Quaternion.LookRotation(dir),
-                    Time.deltaTime * 10f
-                );
-            }
+            currentAngle = Mathf.SmoothDampAngle(
+                currentAngle,
+                targetAngle,
+                ref turnVelocity,
+                0.08f
+            );
         }
 
-        // 移动
-        Vector3 forward = transform.forward * move.y;
-        Vector3 right = transform.right * move.x;
 
-        Vector3 velocity = (forward + right) * moveSpeed * Time.deltaTime;
-        transform.position += velocity;
+        //A/D施加额外扭矩
+        currentAngle -= move.x * -turnTorque * Time.deltaTime;
+
+
+        transform.rotation = Quaternion.Euler(
+            0,
+            0,
+            -currentAngle
+        );
+
+
+        Vector2 forward = new Vector2(
+            Mathf.Sin(currentAngle * Mathf.Deg2Rad),
+            Mathf.Cos(currentAngle * Mathf.Deg2Rad)
+        );
+
+        Vector2 moveDir = forward * move.y;
+
+        rb.linearVelocity = moveDir * moveSpeed;
+    }
+
+    void LateUpdate()
+    {
+        if (isLocalPlayer)
+        {
+            //此处留空做反作弊回滚
+            return;
+        }
+
+        transform.position =
+            Vector3.Lerp(
+                transform.position,
+                syncPos,
+                10f * Time.deltaTime
+            );
+
+        transform.rotation =
+            Quaternion.Slerp(
+                transform.rotation,
+                syncRot,
+                10f * Time.deltaTime
+            );
     }
 }

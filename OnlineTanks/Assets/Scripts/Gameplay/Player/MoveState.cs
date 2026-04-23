@@ -4,6 +4,6 @@ public class MoveState : PlayerState
 
     public override void Update()
     {
-        player.ServerMove(player.Input.MoveInput, player.Input.LookInput);
+
     }
 }
