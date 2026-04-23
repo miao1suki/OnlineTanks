@@ -1,43 +1,68 @@
 using Mirror;
-using System.Collections;
 using System.Net;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class ServerBootstrap : MonoBehaviour
 {
-    private void Awake()
+    void Awake()
     {
-        //  初始化 TLS
         ServicePointManager.SecurityProtocol =
             SecurityProtocolType.Tls12;
+
         Debug.Log(SystemInfo.operatingSystem);
     }
+
     void Start()
     {
+        bool isServerBuild = false;
+        int port = 7777;
+
         string[] args = System.Environment.GetCommandLineArgs();
 
-        foreach (string arg in args)
+        for (int i = 0; i < args.Length; i++)
         {
-            if (arg == "-server")
+            if (args[i] == "-server")
             {
-                Debug.Log("服务器模式启动");
-                StartCoroutine(RegisterServer());
-                NetworkManager.singleton.StartServer();
+                isServerBuild = true;
+            }
+
+            if (args[i] == "-port" && i + 1 < args.Length)
+            {
+                int.TryParse(args[i + 1], out port);
             }
         }
+
+        // 客户端直接退出，不执行服务端逻辑
+        if (!isServerBuild)
+        {
+            Debug.Log("客户端模式，不启动Mirror服务器");
+            return;
+        }
+
+        Debug.Log("Dedicated Server启动，端口：" + port);
+
+        var manager = NetworkManager.singleton;
+
+        if (manager == null)
+        {
+            Debug.LogError("没有找到NetworkManager");
+            return;
+        }
+
+        var transport =
+            manager.GetComponent<kcp2k.KcpTransport>();
+
+        if (transport == null)
+        {
+            Debug.LogError("没有找到KcpTransport");
+            return;
+        }
+
+        transport.Port = (ushort)port;
+
+        manager.StartServer();
+
+        Debug.Log("Mirror监听已开启：" + port);
     }
 
-    private IEnumerator RegisterServer()
-    {
-        string url = "https://meowgame.cloud/api/register";
-
-        WWWForm form = new WWWForm();
-        form.AddField("name", "我的房间");
-        form.AddField("port", 7777);
-
-        UnityWebRequest www = UnityWebRequest.Post(url, form);
-        www.certificateHandler = new IgnoreSSL();
-        yield return www.SendWebRequest();
-    }
 }

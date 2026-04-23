@@ -166,10 +166,10 @@ GameObject:
   - component: {fileID: 4078112545098081060}
   - component: {fileID: 9156374736909740969}
   - component: {fileID: -5621034980103694902}
-  - component: {fileID: 2993834107127556100}
   - component: {fileID: 4509323362491132769}
-  - component: {fileID: 3444868687558141770}
   - component: {fileID: 2896466231805468983}
+  - component: {fileID: 2172923625620490390}
+  - component: {fileID: 4393032887002052400}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -247,18 +247,6 @@ MonoBehaviour:
   positionSensitivity: 0.01
   rotationSensitivity: 0.01
   scaleSensitivity: 0.01
---- !u!114 &2993834107127556100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1496877014486293102}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef95ff57fbad1514fba661e9103b1146, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TankController
 --- !u!114 &4509323362491132769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,18 +259,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f49503d12577838469ec793030d442e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankHealth
---- !u!114 &3444868687558141770
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1496877014486293102}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 375ec2fa7441d594a9eb00a94db16ccb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TankStateMachine
 --- !u!114 &2896466231805468983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -304,6 +280,37 @@ MonoBehaviour:
   - {fileID: 2272790021884193246}
   - {fileID: 4155544694882782521}
   - {fileID: 6393834373184165753}
+--- !u!114 &2172923625620490390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496877014486293102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2909a799fc3c7b44aaf5fd26d6b17f09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  moveSpeed: 5
+  turnSpeed: 180
+--- !u!114 &4393032887002052400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496877014486293102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d70385c09be2454418d2e4417df7e0b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInputHandler
+  MoveInput: {x: 0, y: 0}
+  LookInput: {x: 0, y: 0}
 --- !u!1 &2578146702800845340
 GameObject:
   m_ObjectHideFlags: 0
@@ -507,7 +514,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 5
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1265180874834094377, guid: 8b60b4b2372c4fa4dbc9894de758e2d2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -598,7 +605,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 5
+  m_SortingOrder: 3
   m_MaskInteraction: 0
   m_Sprite: {fileID: 2550847003344255529, guid: 38ebc44d60708504786598950884c3c2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -689,7 +696,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 4
+  m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1071523155210718792, guid: 8eadeee63339ee149a4a9c0061d369b2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -780,7 +787,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 2
+  m_SortingOrder: 4
   m_MaskInteraction: 0
   m_Sprite: {fileID: 3631311224200100833, guid: caab851996686a448ab3e6afae0f0afd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

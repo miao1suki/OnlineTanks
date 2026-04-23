@@ -3,6 +3,7 @@ using UnityEngine.Networking;
 using System.Collections;
 using Mirror;
 using TMPro;
+using kcp2k;
 
 public class CreateRoomService : MonoBehaviour
 {
@@ -48,7 +49,7 @@ public class CreateRoomService : MonoBehaviour
 
     IEnumerator CreateRoomCoroutine(string roomName, int maxPlayers)
     {
-        string url = "https://meowgame.cloud/api/createRoom";
+        string url = "https://62.234.93.20/api/createRoom";
 
         WWWForm form = new WWWForm();
         form.AddField("name", roomName);
@@ -77,10 +78,23 @@ public class CreateRoomService : MonoBehaviour
 
     void ConnectToRoom(RoomInfo room)
     {
-        Debug.Log("连接新房间: " + room.address + ":" + room.port);
+        Debug.Log($"连接新房间: {room.address}:{room.port}");
+
+        if (NetworkManager.singleton == null)
+        {
+            Debug.LogError("NetworkManager.singleton == NULL");
+            return;
+        }
+
+        var transport = NetworkManager.singleton.GetComponent<KcpTransport>();
+        if (transport == null)
+        {
+            Debug.LogError("TelepathyTransport 未挂载！");
+            return;
+        }
 
         NetworkManager.singleton.networkAddress = room.address;
-        NetworkManager.singleton.GetComponent<TelepathyTransport>().port = (ushort)room.port;
+        transport.port = (ushort)room.port;
 
         NetworkManager.singleton.StartClient();
     }

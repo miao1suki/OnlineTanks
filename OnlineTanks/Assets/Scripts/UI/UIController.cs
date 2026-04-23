@@ -8,48 +8,72 @@ using UnityEngine.UI;
 public class UIController : MonoBehaviour
 {
     public GameObject roomItemPrefab; // 房间UI预制体
-    public GameObject roomListParent; // 列表父物体
-    public Button searchButton;            // 搜索按钮
-    public TMP_InputField nameInput; // 名字输入框
+    [Header("LAN UI")]
+    public GameObject lanRoomListParent; // 列表父物体
+    public Button lanSearchButton;            // 搜索按钮
+    public TMP_InputField lanNameInput; // 名字输入框
+    [Header("Server UI")]
+    public GameObject serverRoomListParent;
+    public Button serverSearchButton;
+    public TMP_InputField serverNameInput;
+
     public static int LocalColorIndex = 0;// 本地玩家颜色（默认绿色）
     public PlayerPreview preview;
     public static string LocalPlayerName = "Player";
 
     HashSet<string> discovered = new HashSet<string>(); //房间去重
+    public enum UIMode
+    {
+        LAN,
+        SERVER
+    }
+
+    public UIMode uiMode;
 
     private void Awake()
     {
-        //监听 RoomService
+        // LAN事件
         if (RoomService.Instance != null)
         {
-            RoomService.Instance.OnRoomFound += OnServerFound;
+            RoomService.Instance.OnRoomFound += OnLANRoomFound;
         }
 
-        if (searchButton != null)
-                searchButton.onClick.AddListener(OnClickSearch);
-
-        if (nameInput != null)
+        // Server事件
+        if (OnlineService.Instance != null)
         {
-            nameInput.onValueChanged.AddListener(OnNameChanged); // 监听输入
-            Debug.Log("已监听输入");
+            OnlineService.Instance.OnRoomFound += OnServerRoomFound;
         }
 
+        if (lanSearchButton != null)
+            lanSearchButton.onClick.AddListener(OnClickSearch);
+
+        if (serverSearchButton != null)
+            serverSearchButton.onClick.AddListener(OnClickSearch);
+
+        if (lanNameInput != null)
+            lanNameInput.onValueChanged.AddListener(OnNameChanged);
+
+        if (serverNameInput != null)
+            serverNameInput.onValueChanged.AddListener(OnNameChanged);
     }
     private void OnDestroy()
     {
         // 防止事件泄漏
         if (RoomService.Instance != null)
-        {
-            RoomService.Instance.OnRoomFound -= OnServerFound;
-        }
+            RoomService.Instance.OnRoomFound -= OnLANRoomFound;
+
+        if (OnlineService.Instance != null)
+            OnlineService.Instance.OnRoomFound -= OnServerRoomFound;
     }
 
     public void OnClickLAN()
     {
+        uiMode = UIMode.LAN;
         RoomService.Instance.SetModeLAN();
     }
     public void OnClickServer()
     {
+        uiMode = UIMode.SERVER;
         RoomService.Instance.SetModeServer();
     }
 
@@ -65,32 +89,44 @@ public class UIController : MonoBehaviour
     }
 
     // 收到服务器回应
-    void OnServerFound(DiscoveryResponse info, IPEndPoint endpoint)
+    void HandleRoom(string roomName, string address)
     {
-        string address = endpoint.Address.ToString();
-
         if (discovered.Contains(address)) return;
         discovered.Add(address);
 
-        GameObject itemGO = Instantiate(roomItemPrefab, roomListParent.transform ,false);
+        GameObject parent = (uiMode == UIMode.LAN)
+            ? lanRoomListParent
+            : serverRoomListParent;
+
+        GameObject itemGO = Instantiate(roomItemPrefab, parent.transform, false);
         RoomItem item = itemGO.GetComponent<RoomItem>();
 
-        string roomName = info != null ? info.roomName : address;
-        item.roomNameText.text = roomName;  //在房间文本显示房间名
-
+        item.roomNameText.text = roomName;
 
         item.joinButton.onClick.AddListener(() =>
         {
             ConnectToServer(address);
         });
     }
+    void OnLANRoomFound(DiscoveryResponse info, IPEndPoint endpoint)
+    {
+        HandleRoom(info != null ? info.roomName : endpoint.Address.ToString(),
+               endpoint.Address.ToString());
+    }
+    void OnServerRoomFound(RoomInfo room)
+    {
+        HandleRoom(room.roomName, room.address);
+    }
+
 
     void ClearRoomList()
     {
-        foreach (Transform child in roomListParent.transform)
-        {
+        GameObject parent = (uiMode == UIMode.LAN)
+        ? lanRoomListParent
+        : serverRoomListParent;
+
+        foreach (Transform child in parent.transform)
             Destroy(child.gameObject);
-        }
 
         discovered.Clear(); //清空去重列表
     }

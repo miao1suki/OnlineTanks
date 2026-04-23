@@ -151,10 +151,10 @@ RectTransform:
   m_Children:
   - {fileID: 325039281}
   - {fileID: 2095537995}
-  - {fileID: 2032690410}
-  - {fileID: 498638108}
   - {fileID: 51223382}
   - {fileID: 1278819961}
+  - {fileID: 2032690410}
+  - {fileID: 498638108}
   m_Father: {fileID: 1904804540}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -9849,19 +9849,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1838996810}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2120307610}
-        m_TargetAssemblyTypeName: UIController, Assembly-CSharp
-        m_MethodName: OnClickSearch
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1838996810
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11481,10 +11469,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIController
   roomItemPrefab: {fileID: 6471637968059701031, guid: a399bee9652e13443b22b52566612c6e, type: 3}
-  roomListParent: {fileID: 1416782441}
-  searchButton: {fileID: 1614859051}
-  nameInput: {fileID: 1593295972}
+  lanRoomListParent: {fileID: 1094911631}
+  lanSearchButton: {fileID: 1614859051}
+  lanNameInput: {fileID: 922901727}
+  serverRoomListParent: {fileID: 1687826032}
+  serverSearchButton: {fileID: 1838996809}
+  serverNameInput: {fileID: 2054325748}
   preview: {fileID: 25303862}
+  uiMode: 0
 --- !u!1 &2123200535
 GameObject:
   m_ObjectHideFlags: 0

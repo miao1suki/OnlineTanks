@@ -21,7 +21,7 @@ public class OnlineService : MonoBehaviour
 
     IEnumerator RequestRoomList()
     {
-        string url = "https://meowgame.cloud/api/rooms";
+        string url = "https://62.234.93.20/api/rooms";
 
         UnityWebRequest www = UnityWebRequest.Get(url);
         www.certificateHandler = new IgnoreSSL();
@@ -52,7 +52,12 @@ public class OnlineService : MonoBehaviour
 
     public void Connect(RoomInfo room)
     {
+        var transport =
+        NetworkManager.singleton.GetComponent<kcp2k.KcpTransport>();
+
+        transport.Port = (ushort)room.port;
         NetworkManager.singleton.networkAddress = room.address;
+
         NetworkManager.singleton.StartClient();
     }
 }

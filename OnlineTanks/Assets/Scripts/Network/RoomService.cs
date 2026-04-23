@@ -78,13 +78,16 @@ public class RoomService : MonoBehaviour
         {
             Debug.Log("HTTP·¿¼ä: " + room.roomName);
 
-            OnRoomFound?.Invoke(
-                null,
-                new IPEndPoint(
-                    Dns.GetHostAddresses(room.address)[0],
-                    room.port
-                )
-            );
+            var ip = Dns.GetHostAddresses(room.address)[0];
+
+            var endpoint = new IPEndPoint(ip, room.port);
+
+            var discovery = new DiscoveryResponse
+            {
+                roomName = room.roomName
+            };
+
+            OnRoomFound?.Invoke(discovery, endpoint);
         };
 
         OnlineService.Instance.GetRoomList();

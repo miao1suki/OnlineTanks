@@ -45,13 +45,19 @@ public class GameManager : MonoBehaviour
     {
         switch (type)
         {
-            case NetworkManagerCustom.ConnectionType.ServerStart:
+            case NetworkManagerCustom.ConnectionType.ServerRunning:
                 OnServerStarted();
                 break;
-            case NetworkManagerCustom.ConnectionType.ClientConnect:
+
+            case NetworkManagerCustom.ConnectionType.Connected:
+                Debug.Log("已连接服务器（进入大厅/等待进入房间）");
+                break;
+
+            case NetworkManagerCustom.ConnectionType.InRoom:
                 OnClientConnected();
                 break;
-            case NetworkManagerCustom.ConnectionType.Disconnect:
+
+            case NetworkManagerCustom.ConnectionType.Disconnected:
                 OnDisconnected();
                 break;
         }
