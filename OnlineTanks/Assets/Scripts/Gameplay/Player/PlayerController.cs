@@ -11,11 +11,14 @@ public class PlayerController : NetworkBehaviour
     public float fireCooldown = 0.5f;
     float nextFireTime;
     public Transform firePoint;
+    public PlayerHitBox hitBox;
 
-    [SyncVar]
+    [SyncVar(hook = nameof(OnAliveChanged))]
     public bool isAlive = true;
 
     PlayerInputHandler input;
+    // 统一入口锁
+    bool inputLocked = true;
 
     [SyncVar] Vector3 syncPos;
     [SyncVar] Quaternion syncRot;
@@ -45,7 +48,7 @@ public class PlayerController : NetworkBehaviour
 
     void Update()
     {
-        if (!isLocalPlayer || !isAlive) return;
+        if (!isLocalPlayer || !isAlive || inputLocked) return;
 
         if (!isLocalPlayer) return;
 
@@ -72,12 +75,34 @@ public class PlayerController : NetworkBehaviour
             );
         }
     }
+    // 统一初始化函数
+    public void SetSpawnState(Vector3 pos, bool aliveState)
+    {
+        transform.position = pos;
+
+        syncPos = pos;
+        syncRot = Quaternion.identity;
+
+        rb.linearVelocity = Vector2.zero;
+        rb.simulated = aliveState;
+
+        isAlive = aliveState;
+
+        currentAngle = 0;
+
+        inputLocked = false;
+
+        foreach (var s in sprites)
+            s.enabled = aliveState;
+    }
 
     public void Die()
     {
         if (!isAlive) return;
 
         isAlive = false;
+
+        inputLocked = true;
 
         rb.linearVelocity = Vector2.zero;
 
@@ -93,20 +118,24 @@ public class PlayerController : NetworkBehaviour
 
     public void Respawn(Vector3 pos)
     {
+        if (!isServer) return;
+
         isAlive = true;
+        SetSpawnState(pos, true);
+    }
 
-        transform.position = pos;
+    [TargetRpc]
+    public void TargetRespawn(NetworkConnection conn, Vector3 pos)
+    {
+        SetSpawnState(pos, true);
+    }
 
-        currentAngle = 0;
-
-        rb.linearVelocity = Vector2.zero;
-
-        rb.simulated = true;
+    void OnAliveChanged(bool oldValue, bool newValue)
+    {
+        rb.simulated = newValue;
 
         foreach (var s in sprites)
-        {
-            s.enabled = true;
-        }
+            s.enabled = newValue;
     }
 
     [Command]

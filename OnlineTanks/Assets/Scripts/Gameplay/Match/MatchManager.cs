@@ -56,6 +56,7 @@ public class MatchManager : NetworkBehaviour
             case RoomState.Playing:
                 spectators.Add(p);
 
+                p.SetSpawnState(Vector3.zero, false);
                 TargetShowSpectatorMsg(
                     p.connectionToClient
                 );
@@ -172,7 +173,11 @@ public class MatchManager : NetworkBehaviour
         {
             Vector3 spawnPos = GetRandomSpawn();
 
+            // 1. 服务器重置状态
             p.Respawn(spawnPos);
+
+            // 2. 强制同步客户端位置/状态
+            p.TargetRespawn(p.connectionToClient, spawnPos);
         }
     }
 

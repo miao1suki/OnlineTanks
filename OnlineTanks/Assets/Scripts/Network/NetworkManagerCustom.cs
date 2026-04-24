@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using Mirror;
+using Mirror.Examples.Common.Controllers.Player;
 public class NetworkManagerCustom : NetworkManager
 {
     // 连接类型枚举
@@ -17,6 +18,8 @@ public class NetworkManagerCustom : NetworkManager
     // 事件：参数标识连接类型
     public static Action<ConnectionType> OnConnectionStatusChanged;
     public static Action<string> OnJoinedRoom;
+
+    public GameObject hitBoxPrefab;
 
     // 客户端成功连接
     public override void OnClientConnect()
@@ -88,6 +91,19 @@ public class NetworkManagerCustom : NetworkManager
         player.name =
             "Player_" +
             player.GetComponent<NetworkIdentity>().netId;
+
+        GameObject box = Instantiate(hitBoxPrefab);
+        PlayerController playerController = player.GetComponent<PlayerController>();
+
+        NetworkServer.Spawn(box);
+
+        PlayerHitBox hitBox = box.GetComponent<PlayerHitBox>();
+
+        // 绑定玩家
+        hitBox.Bind(playerController);
+
+        // 让 player 持有引用
+        playerController.hitBox = hitBox;
 
         MatchManager.Instance.RegisterPlayer(
             player.GetComponent<PlayerController>()

@@ -6162,7 +6162,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  hitBoxPrefab: {fileID: 9114772608524288965, guid: 0ac2cfe116a86fd429c7322b36e0d90a, type: 3}
   currentState: 0
   spawnPoints: []
   prepareTime: 10
@@ -6816,6 +6815,7 @@ MonoBehaviour:
   evaluationMethod: 0
   evaluationInterval: 3
   timeInterpolationGui: 0
+  hitBoxPrefab: {fileID: 9114772608524288965, guid: 0ac2cfe116a86fd429c7322b36e0d90a, type: 3}
 --- !u!1 &1251854661
 GameObject:
   m_ObjectHideFlags: 0
