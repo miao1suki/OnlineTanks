@@ -1,16 +1,45 @@
+using Mirror;
 using UnityEngine;
 
-public class Bullet : MonoBehaviour
+public class Bullet : NetworkBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public float speed = 20;
+    public float life = 5f;
+    public uint ownerId;
+
+    Rigidbody2D rb;
+
+    void Awake()
     {
-        
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void Launch(Vector2 dir)
     {
-        
+        rb.linearVelocity = dir.normalized * speed;
+
+        CancelInvoke();
+
+        Invoke(
+          nameof(ReturnPool),
+          life
+        );
+    }
+
+    void OnCollisionEnter2D(
+        Collision2D c
+    )
+    {
+        // PhysicsMaterial×Ô¶¯·´µ¯
+    }
+
+    void ReturnPool()
+    {
+        rb.linearVelocity = Vector2.zero;
+
+        BulletPool.Instance.ReturnBullet(
+            ownerId,
+            gameObject
+        );
     }
 }

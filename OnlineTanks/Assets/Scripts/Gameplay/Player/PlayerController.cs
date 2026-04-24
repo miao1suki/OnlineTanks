@@ -5,7 +5,12 @@ using UnityEngine.InputSystem;
 public class PlayerController : NetworkBehaviour
 {
     public float moveSpeed = 5f;
+    public float sprintSpeed = 9f;
     public float turnTorque = 180f;
+
+    public float fireCooldown = 0.5f;
+    float nextFireTime;
+    public Transform firePoint;
 
     PlayerInputHandler input;
 
@@ -15,12 +20,12 @@ public class PlayerController : NetworkBehaviour
     float currentAngle;
     float turnVelocity;
 
-    Rigidbody2D rb; 
+    Rigidbody2D rb;
 
     void Awake()
     {
         input = GetComponent<PlayerInputHandler>();
-        rb = GetComponent<Rigidbody2D>(); 
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Start()
@@ -38,11 +43,77 @@ public class PlayerController : NetworkBehaviour
         Vector2 move = input.MoveInput;
         Vector2 look = CalculateLookDirection();
 
-        // 本地预测
-        ClientPredict(move, look);
+        //检测右键
+        bool isBoosting = Mouse.current.rightButton.isPressed;
+
+        // 客户端预测
+        ClientPredict(move, look, isBoosting);
 
         // 发给服务器
-        CmdSendInput(move, look);
+        CmdSendInput(move, look, isBoosting);
+
+        //发射子弹
+        if (Mouse.current.leftButton.wasPressedThisFrame && Time.time >= nextFireTime)
+        {
+            nextFireTime = Time.time + fireCooldown;
+
+            CmdFire(
+                firePoint.position,
+                look
+            );
+        }
+    }
+
+    [Command]
+    void CmdFire(Vector2 pos, Vector2 dir)
+    {
+        GameObject bullet =
+            BulletPool.Instance.GetBullet(netId);
+
+        bullet.transform.position = pos;
+
+        bullet.transform.rotation =
+            Quaternion.LookRotation(
+                Vector3.forward,
+                dir
+            );
+
+        bullet.SetActive(true);
+
+        bullet.GetComponent<Bullet>()
+            .Launch(dir);
+
+        RpcSpawnBullet(
+            pos,
+            dir,
+            netId
+        );
+    }
+
+    [ClientRpc]
+    void RpcSpawnBullet(
+        Vector2 pos,
+        Vector2 dir,
+        uint ownerId
+    )
+    {
+        if (isServer) return;
+
+        GameObject bullet =
+            BulletPool.Instance.GetBullet(ownerId);
+
+        bullet.transform.position = pos;
+
+        bullet.transform.rotation =
+            Quaternion.LookRotation(
+                Vector3.forward,
+                dir
+            );
+
+        bullet.SetActive(true);
+
+        bullet.GetComponent<Bullet>()
+            .Launch(dir);
     }
 
     Vector2 CalculateLookDirection()
@@ -55,7 +126,7 @@ public class PlayerController : NetworkBehaviour
     }
 
     // 客户端预测
-    void ClientPredict(Vector2 move, Vector2 look)
+    void ClientPredict(Vector2 move, Vector2 look, bool boosting)
     {
         Vector2 targetDir = look;
 
@@ -85,21 +156,22 @@ public class PlayerController : NetworkBehaviour
 
         Vector2 moveDir = forward * move.y;
 
-        rb.linearVelocity = moveDir * moveSpeed;
+        float speed = boosting ? sprintSpeed : moveSpeed;
+        rb.linearVelocity = moveDir * speed;
     }
 
     // ===== 只负责上传输入 =====
     [Command]
-    void CmdSendInput(Vector2 move, Vector2 look)
+    void CmdSendInput(Vector2 move, Vector2 look, bool boosting)
     {
-        ServerSimulate(move, look);
+        ServerSimulate(move, look, boosting);
 
         syncPos = transform.position;
         syncRot = transform.rotation;
     }
 
     // ===== 服务器唯一模拟 =====
-    void ServerSimulate(Vector2 move, Vector2 look)
+    void ServerSimulate(Vector2 move, Vector2 look, bool boosting)
     {
         Vector2 targetDir = look;
 
@@ -116,17 +188,14 @@ public class PlayerController : NetworkBehaviour
             );
         }
 
-
         //A/D施加额外扭矩
         currentAngle -= move.x * -turnTorque * Time.deltaTime;
-
 
         transform.rotation = Quaternion.Euler(
             0,
             0,
             -currentAngle
         );
-
 
         Vector2 forward = new Vector2(
             Mathf.Sin(currentAngle * Mathf.Deg2Rad),
@@ -135,7 +204,8 @@ public class PlayerController : NetworkBehaviour
 
         Vector2 moveDir = forward * move.y;
 
-        rb.linearVelocity = moveDir * moveSpeed;
+        float speed = boosting ? sprintSpeed : moveSpeed;
+        rb.linearVelocity = moveDir * speed;
     }
 
     void LateUpdate()
