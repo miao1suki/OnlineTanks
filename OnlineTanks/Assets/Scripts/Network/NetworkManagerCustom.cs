@@ -1,7 +1,6 @@
 using UnityEngine;
 using System;
 using Mirror;
-using static UnityEngine.LowLevelPhysics2D.PhysicsLayers;
 public class NetworkManagerCustom : NetworkManager
 {
     // 连接类型枚举
@@ -17,7 +16,7 @@ public class NetworkManagerCustom : NetworkManager
 
     // 事件：参数标识连接类型
     public static Action<ConnectionType> OnConnectionStatusChanged;
-    public static Action OnJoinedRoom;
+    public static Action<string> OnJoinedRoom;
 
     // 客户端成功连接
     public override void OnClientConnect()
@@ -61,21 +60,38 @@ public class NetworkManagerCustom : NetworkManager
         Debug.Log("服务端停止，房间已关闭");
         OnConnectionStatusChanged?.Invoke(ConnectionType.Disconnected);
     }
-    
+    public override void OnServerDisconnect(NetworkConnectionToClient conn)
+    {
+        if (conn.identity != null)
+        {
+            PlayerController player =
+                conn.identity.GetComponent<PlayerController>();
+
+            if (player != null)
+            {
+                MatchManager.Instance.UnregisterPlayer(player);
+            }
+        }
+
+        base.OnServerDisconnect(conn);
+    }
+
     //服务器生成玩家实例
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
         GameObject player = Instantiate(playerPrefab);
 
-        PlayerData data = player.GetComponent<PlayerData>();
-
-        // 设置位置
         player.transform.position = Vector3.zero;
+
         NetworkServer.AddPlayerForConnection(conn, player);
 
-        //编辑器显示ID
-        player.name = "Player_" + player.GetComponent<NetworkIdentity>().netId;
+        player.name =
+            "Player_" +
+            player.GetComponent<NetworkIdentity>().netId;
 
+        MatchManager.Instance.RegisterPlayer(
+            player.GetComponent<PlayerController>()
+        );
     }
 
     public override void OnClientSceneChanged()
@@ -86,7 +102,18 @@ public class NetworkManagerCustom : NetworkManager
 
         OnConnectionStatusChanged?.Invoke(ConnectionType.InRoom);
 
-        OnJoinedRoom?.Invoke();
+        OnJoinedRoom?.Invoke(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+    }
+    public override void OnServerSceneChanged(string sceneName)
+    {
+        base.OnServerSceneChanged(sceneName);
+
+        if (sceneName == "Game")
+        {
+            Debug.Log("服务器进入Game场景");
+
+            MatchManager.Instance?.OnServerGameSceneReady();
+        }
     }
 }
 

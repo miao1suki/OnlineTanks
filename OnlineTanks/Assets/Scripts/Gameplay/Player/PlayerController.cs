@@ -12,20 +12,26 @@ public class PlayerController : NetworkBehaviour
     float nextFireTime;
     public Transform firePoint;
 
+    [SyncVar]
+    public bool isAlive = true;
+
     PlayerInputHandler input;
 
     [SyncVar] Vector3 syncPos;
     [SyncVar] Quaternion syncRot;
 
+
     float currentAngle;
     float turnVelocity;
 
     Rigidbody2D rb;
+    SpriteRenderer[] sprites;
 
     void Awake()
     {
         input = GetComponent<PlayerInputHandler>();
         rb = GetComponent<Rigidbody2D>();
+        sprites = GetComponentsInChildren<SpriteRenderer>();
     }
 
     void Start()
@@ -36,8 +42,11 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+
     void Update()
     {
+        if (!isLocalPlayer || !isAlive) return;
+
         if (!isLocalPlayer) return;
 
         Vector2 move = input.MoveInput;
@@ -61,6 +70,42 @@ public class PlayerController : NetworkBehaviour
                 firePoint.position,
                 look
             );
+        }
+    }
+
+    public void Die()
+    {
+        if (!isAlive) return;
+
+        isAlive = false;
+
+        rb.linearVelocity = Vector2.zero;
+
+        rb.simulated = false;
+        foreach (var s in sprites)
+        {
+            s.enabled = false;
+        }
+
+        if (isServer)
+            MatchManager.Instance.OnPlayerDead(this);
+    }
+
+    public void Respawn(Vector3 pos)
+    {
+        isAlive = true;
+
+        transform.position = pos;
+
+        currentAngle = 0;
+
+        rb.linearVelocity = Vector2.zero;
+
+        rb.simulated = true;
+
+        foreach (var s in sprites)
+        {
+            s.enabled = true;
         }
     }
 

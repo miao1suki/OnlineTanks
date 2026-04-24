@@ -300,6 +300,9 @@ MonoBehaviour:
   turnTorque: 180
   fireCooldown: 0.5
   firePoint: {fileID: 4679118016207729481}
+  isAlive: 1
+  lastHeartbeatTime: 0
+  hitBoxInstance: {fileID: 0}
 --- !u!114 &4393032887002052400
 MonoBehaviour:
   m_ObjectHideFlags: 0

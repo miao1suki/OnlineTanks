@@ -25,15 +25,12 @@ public class Bullet : NetworkBehaviour
           life
         );
     }
-
-    void OnCollisionEnter2D(
-        Collision2D c
-    )
+    void OnCollisionEnter2D(Collision2D c)
     {
-        // PhysicsMaterial自动反弹
+        //墙体走PhysicsMaterial反弹
     }
 
-    void ReturnPool()
+    public void ReturnPool()
     {
         rb.linearVelocity = Vector2.zero;
 
