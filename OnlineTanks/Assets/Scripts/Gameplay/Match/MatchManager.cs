@@ -2,12 +2,30 @@ using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using System.Linq;
 
 public class MatchManager : NetworkBehaviour
 {
     public static MatchManager Instance;
 
-    [SyncVar]
+    List<PlayerController> GetAllClientPlayers()
+    {
+        List<PlayerController> result =
+            new List<PlayerController>();
+
+        foreach (var kv in NetworkClient.spawned)
+        {
+            PlayerController p =
+                kv.Value.GetComponent<PlayerController>();
+
+            if (p != null)
+                result.Add(p);
+        }
+
+        return result;
+    }
+
+    [SyncVar(hook = nameof(OnRoomStateChanged))]
     public RoomState currentState;
 
     public Transform[] spawnPoints;
@@ -34,10 +52,69 @@ public class MatchManager : NetworkBehaviour
         Instance = this;
     }
 
+    void OnRoomStateChanged(RoomState oldState,RoomState newState)
+    {
+        if (!isClient) return;
 
+        ApplyRoomUI(newState);
+    }
+
+    void ApplyRoomUI(RoomState state)
+    {
+        if (RoomCanvasController.Instance == null)
+            return;
+
+        List<PlayerController> uiPlayers =
+            GetAllClientPlayers();
+
+        switch (state)
+        {
+            case RoomState.Waiting:
+
+                RoomCanvasController.Instance
+                    .RefreshPlayerList(uiPlayers);
+
+                RoomCanvasController.Instance
+                    .ShowWaiting();
+                break;
+
+
+            case RoomState.Preparing:
+
+                RoomCanvasController.Instance
+                    .RefreshPlayerList(uiPlayers);
+
+                RoomCanvasController.Instance
+                    .ShowPreparing(prepareTime);
+                break;
+
+
+            case RoomState.Generating:
+
+                RoomCanvasController.Instance
+                    .ShowGenerating();
+                break;
+
+
+            case RoomState.Playing:
+
+                RoomCanvasController.Instance
+                    .ShowPlaying();
+                break;
+        }
+    }
+
+    // 服务器启动
     public override void OnStartServer()
     {
         ChangeState(RoomState.Waiting);
+    }
+    // 客户端连接
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        ApplyRoomUI(currentState);
     }
 
     public void RegisterPlayer(PlayerController p)
@@ -265,6 +342,7 @@ public class MatchManager : NetworkBehaviour
             "房间状态 -> " +
             newState
         );
+
     }
 
     [TargetRpc]
@@ -278,15 +356,33 @@ public class MatchManager : NetworkBehaviour
     [ClientRpc]
     void RpcShowWin(uint winnerId)
     {
-        Debug.Log(
-            "胜利玩家:" + winnerId
-        );
+        string winnerName = "Unknown";
+
+        foreach (var kv in NetworkClient.spawned)
+        {
+            PlayerController p =
+                kv.Value.GetComponent<PlayerController>();
+
+            if (p != null && p.netId == winnerId)
+            {
+                PlayerData data =
+                    p.GetComponent<PlayerData>();
+
+                if (data != null)
+                    winnerName = data.playerName;
+
+                break;
+            }
+        }
+
+        RoomCanvasController.Instance?
+            .ShowSettlement(winnerName);
     }
 
     [ClientRpc]
     void RpcDraw()
     {
-        Debug.Log("平局");
+        RoomCanvasController.Instance?.ShowSettlement("平局");
     }
 
     public void OnServerGameSceneReady()

@@ -48,15 +48,29 @@ public class PlayerController : NetworkBehaviour
 
     void Update()
     {
+        // ESC²Ëµ¥Ëø
+        if (EscMenuController.Instance != null &&
+        EscMenuController.Instance.IsOpen())
+            return;
+
         if (!isLocalPlayer || !isAlive || inputLocked) return;
 
-        if (!isLocalPlayer) return;
 
         Vector2 move = input.MoveInput;
         Vector2 look = CalculateLookDirection();
 
+        //°´B·ÅÆú
+        if (input.SurrenderPressed)
+        {
+            if (RoomCanvasController.Instance != null &&
+                RoomCanvasController.Instance.CanSurrender)
+            {
+                CmdSurrender();
+            }
+        }
+
         //¼ì²âÓÒ¼ü
-        bool isBoosting = Mouse.current.rightButton.isPressed;
+        bool isBoosting = input.BoostHeld;
 
         // ¿Í»§¶ËÔ¤²â
         ClientPredict(move, look, isBoosting);
@@ -65,7 +79,7 @@ public class PlayerController : NetworkBehaviour
         CmdSendInput(move, look, isBoosting);
 
         //·¢Éä×Óµ¯
-        if (Mouse.current.leftButton.wasPressedThisFrame && Time.time >= nextFireTime)
+        if (input.FirePressed && Time.time >= nextFireTime)
         {
             nextFireTime = Time.time + fireCooldown;
 
@@ -136,6 +150,23 @@ public class PlayerController : NetworkBehaviour
 
         foreach (var s in sprites)
             s.enabled = newValue;
+    }
+
+    [Command]
+    public void CmdSurrender()
+    {
+        Die();
+    }
+
+    [Command]
+    public void CmdKickPlayer(uint targetNetId)
+    {
+        if (NetworkServer.spawned.TryGetValue(
+            targetNetId,
+            out NetworkIdentity id))
+        {
+            id.connectionToClient?.Disconnect();
+        }
     }
 
     [Command]

@@ -56,6 +56,7 @@ public class NetworkManagerCustom : NetworkManager
         OnConnectionStatusChanged?.Invoke(ConnectionType.ServerRunning);
     }
 
+
     // ·þÎñ¶ËÍ£Ö¹
     public override void OnStopServer()
     {
