@@ -6,6 +6,8 @@ public class GameManager : MonoBehaviour
     public GameObject[] DontDestroy;
     public GameObject LobbyCanvas;
     public static GameManager instance;
+
+    bool cleaning = false;
     private void Awake()
     {
         // 单例防重复
@@ -75,13 +77,53 @@ public class GameManager : MonoBehaviour
         Debug.Log("客户端加入房间逻辑");
         LobbyCanvas?.SetActive(false);
     }
+    public void LeaveRoom()
+    {
+        Debug.Log("主动离开房间");
+
+        if (NetworkServer.active && NetworkClient.isConnected)
+            NetworkManager.singleton.StopHost();
+
+        else if (NetworkClient.isConnected)
+            NetworkManager.singleton.StopClient();
+
+        else if (NetworkServer.active)
+            NetworkManager.singleton.StopServer();
+    }
 
     private void OnDisconnected()
     {
+        if (cleaning)
+            return;
+
+        cleaning = true;
+
         Debug.Log("断开连接逻辑");
+
+        CleanupNetworkState();
+
+        LANRoomCreator creator =
+            FindFirstObjectByType<LANRoomCreator>();
+
+        if (creator != null)
+            creator.StopRoom();
+
         LobbyCanvas?.SetActive(true);
+
+        cleaning = false;
     }
 
+
+    public void CleanupNetworkState()
+    {
+        Debug.Log("开始清理联机状态");
+
+        MatchManager.Instance?.FullReset();
+
+        RoomCanvasController.Instance?.ResetUI();
+
+        StopAllCoroutines();
+    }
 
     public void ExitGame()
     {

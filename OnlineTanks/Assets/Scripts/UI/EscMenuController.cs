@@ -67,17 +67,9 @@ public class EscMenuController : MonoBehaviour
 
     public void ExitRoom()
     {
-        // œ»Õ£ LAN π„≤•
-        LANRoomCreator creator =
-            FindFirstObjectByType<LANRoomCreator>();
+        opened = false;
+        root.SetActive(false);
 
-        if (creator != null)
-            creator.StopRoom();
-
-        // ‘ŸÕ£ Mirror
-        if (NetworkServer.active && NetworkClient.active)
-            NetworkManager.singleton.StopHost();
-        else
-            NetworkManager.singleton.StopClient();
+        GameManager.instance.LeaveRoom();
     }
 }

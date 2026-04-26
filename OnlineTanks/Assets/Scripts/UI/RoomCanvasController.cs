@@ -85,7 +85,7 @@ public class RoomCanvasController : MonoBehaviour
         if (remain < 0) remain = 0;
 
         countdownText.text =
-            "开始倒计时: " + Mathf.CeilToInt(remain);
+            "等待玩家就绪: " + Mathf.CeilToInt(remain);
     }
 
     public void TickGenerating(double endTime)
@@ -94,7 +94,7 @@ public class RoomCanvasController : MonoBehaviour
         if (remain < 0) remain = 0;
 
         countdownText.text =
-            "加载倒计时: " + Mathf.CeilToInt(remain);
+            "加载中: " + Mathf.CeilToInt(remain);
     }
 
     public void ShowCanvas(bool b)
@@ -206,5 +206,32 @@ public class RoomCanvasController : MonoBehaviour
             "胜利玩家：" + winner;
 
         countdownText.text = "";
+    }
+
+    public void ResetUI()
+    {
+        playingTimer = false;
+
+        CanSurrender = false;
+
+        prepareEndTime = 0;
+        generateEndTime = 0;
+
+        countdownText.text = "";
+        roomStateText.text = "";
+        winnerText.text = "";
+
+        foreach (Transform t in playerListRoot)
+            Destroy(t.gameObject);
+
+        items.Clear();
+
+        root.SetActive(false);
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 }

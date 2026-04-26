@@ -26,6 +26,7 @@ public class NetworkManagerCustom : NetworkManager
     {
         base.OnClientConnect();
 
+
         if (NetworkServer.active)
         {
             Debug.Log("HostÄ£Ê½ºöÂÔClientConnect");

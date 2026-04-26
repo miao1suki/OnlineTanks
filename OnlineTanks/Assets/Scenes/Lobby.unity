@@ -6978,7 +6978,7 @@ MonoBehaviour:
   currentState: 0
   spawnPoints: []
   prepareTime: 10
-  generateTime: 2
+  generateTime: 3
   settleTime: 5
 --- !u!114 &1116111186
 MonoBehaviour:
@@ -7613,7 +7613,10 @@ MonoBehaviour:
   playerPrefab: {fileID: 1496877014486293102, guid: 96396d1e4b7565943b23fa6ce07a55d6, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
-  spawnPrefabs: []
+  spawnPrefabs:
+  - {fileID: 8234219547061203245, guid: e3ed8daccf8ca494ab49c9eb76681e98, type: 3}
+  - {fileID: 1496877014486293102, guid: 96396d1e4b7565943b23fa6ce07a55d6, type: 3}
+  - {fileID: 9114772608524288965, guid: 0ac2cfe116a86fd429c7322b36e0d90a, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2

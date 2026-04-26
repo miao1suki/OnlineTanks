@@ -51,7 +51,7 @@ public class MatchManager : NetworkBehaviour
     [Header("准备阶段时长")]
     public float prepareTime = 10f;
     [Header("地图生成阶段时长")]
-    public float generateTime = 2f;
+    public float generateTime = 3f;
     [Header("游戏结算时长")]
     public float settleTime = 5f;
 
@@ -62,6 +62,12 @@ public class MatchManager : NetworkBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
     }
 
@@ -172,13 +178,25 @@ public class MatchManager : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
+        StartCoroutine(WaitAndSync());
+    }
+
+    IEnumerator WaitAndSync()
+    {
+        // 等 SyncVar 完全同步
+        yield return null;
 
         ApplyRoomUI(currentState);
+
+        // 强制刷新时间
+        RoomCanvasController.Instance?.SetPrepareEnd(prepareEndTimestamp);
+        RoomCanvasController.Instance?.SetGenerateEnd(generateEndTimestamp);
     }
 
     public void RegisterPlayer(PlayerController p)
     {
         players.Add(p);
+        TargetSyncState(p.connectionToClient);
         RefreshRoomPlayerUI();
 
         switch (currentState)
@@ -199,6 +217,14 @@ public class MatchManager : NetworkBehaviour
                 );
                 break;
         }
+    }
+
+    [TargetRpc]
+    void TargetSyncState(NetworkConnection conn)
+    {
+        ApplyRoomUI(currentState);
+        RoomCanvasController.Instance?.SetPrepareEnd(prepareEndTimestamp);
+        RoomCanvasController.Instance?.SetGenerateEnd(generateEndTimestamp);
     }
 
     public void UnregisterPlayer(PlayerController p)
@@ -475,6 +501,27 @@ public class MatchManager : NetworkBehaviour
         matchFlowRoutine = null;
 
     }
+    // 状态复位
+    public void FullReset()
+    {
+        StopAllCoroutines();
+
+        players.Clear();
+        matchPlayers.Clear();
+        spectators.Clear();
+
+        preparingStarted = false;
+        settling = false;
+
+        matchFlowRoutine = null;
+        spawnPoints = null;
+
+        currentState = RoomState.Waiting;
+
+        prepareEndTimestamp = 0;
+        generateEndTimestamp = 0;
+    }
+
     void OnDestroy()
     {
         if (Instance == this)
