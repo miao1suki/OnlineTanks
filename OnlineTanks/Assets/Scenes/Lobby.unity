@@ -4548,7 +4548,6 @@ GameObject:
   m_Component:
   - component: {fileID: 748554092}
   - component: {fileID: 748554096}
-  - component: {fileID: 748554095}
   - component: {fileID: 748554094}
   - component: {fileID: 748554093}
   m_Layer: 5
@@ -4590,7 +4589,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
-  m_VerticalFit: 0
+  m_VerticalFit: 2
 --- !u!114 &748554094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4617,36 +4616,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &748554095
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 748554091}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!222 &748554096
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -13085,10 +13054,11 @@ MonoBehaviour:
   roomItemPrefab: {fileID: 6471637968059701031, guid: a399bee9652e13443b22b52566612c6e, type: 3}
   lanRoomListParent: {fileID: 1094911631}
   lanSearchButton: {fileID: 1614859051}
-  lanNameInput: {fileID: 922901727}
+  lanRoomNameInput: {fileID: 922901727}
+  serverRoomNameInput: {fileID: 2054325748}
+  playerNameInput: {fileID: 1593295972}
   serverRoomListParent: {fileID: 1687826032}
   serverSearchButton: {fileID: 1838996809}
-  serverNameInput: {fileID: 2054325748}
   preview: {fileID: 25303862}
   uiMode: 0
 --- !u!1 &2123200535

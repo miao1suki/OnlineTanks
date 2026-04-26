@@ -11,15 +11,22 @@ public class UIController : MonoBehaviour
     [Header("LAN UI")]
     public GameObject lanRoomListParent; // 列表父物体
     public Button lanSearchButton;            // 搜索按钮
-    public TMP_InputField lanNameInput; // 名字输入框
+    [Header("lanNameInput")]
+    public TMP_InputField lanRoomNameInput; // LAN房间名称输入框
+    [Header("serverNameInput")]
+    public TMP_InputField serverRoomNameInput;// 服务器房间名称输入框
+    [Header("PlayerNameInput")]
+    public TMP_InputField playerNameInput;// 玩家名称输入框
     [Header("Server UI")]
     public GameObject serverRoomListParent;
     public Button serverSearchButton;
-    public TMP_InputField serverNameInput;
+
 
     public static int LocalColorIndex = 0;// 本地玩家颜色（默认绿色）
     public PlayerPreview preview;
     public static string LocalPlayerName = "Player";
+    string lanRoomName = "新建房间名";
+    string serverRoomName = "默认房间名";
 
     HashSet<string> discovered = new HashSet<string>(); //房间去重
     public enum UIMode
@@ -32,6 +39,32 @@ public class UIController : MonoBehaviour
 
     private void Awake()
     {
+        // 玩家名字输入
+        if (playerNameInput != null)
+        {
+            playerNameInput.onValueChanged.AddListener(OnPlayerNameChanged);
+
+            playerNameInput.SetTextWithoutNotify(
+                LocalPlayerData.PlayerName
+            );
+        }
+
+        // 房间名字输入
+        if (lanRoomNameInput != null)
+        {
+            lanRoomNameInput.onValueChanged.AddListener(
+                OnLanRoomNameChanged
+            );
+        }
+
+        if (serverRoomNameInput != null)
+        {
+            serverRoomNameInput.onValueChanged.AddListener(
+                OnServerRoomNameChanged
+            );
+        }
+
+
         // LAN事件
         if (RoomService.Instance != null)
         {
@@ -50,11 +83,6 @@ public class UIController : MonoBehaviour
         if (serverSearchButton != null)
             serverSearchButton.onClick.AddListener(OnClickSearch);
 
-        if (lanNameInput != null)
-            lanNameInput.onValueChanged.AddListener(OnNameChanged);
-
-        if (serverNameInput != null)
-            serverNameInput.onValueChanged.AddListener(OnNameChanged);
     }
     private void OnDestroy()
     {
@@ -138,17 +166,38 @@ public class UIController : MonoBehaviour
         RoomService.Instance?.Connect(address);
     }
 
-    void OnNameChanged(string value)
+    void OnPlayerNameChanged(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return;
 
         LocalPlayerData.PlayerName = value;
 
-        Debug.Log("本地保存名字: " + value);
-
+        Debug.Log(
+            "本地保存玩家名字: " + value
+        );
     }
- 
+
+
+    void OnLanRoomNameChanged(string value)
+    {
+        lanRoomName = value;
+
+        Debug.Log(
+            "LAN房间名修改: " + value
+        );
+    }
+
+
+    void OnServerRoomNameChanged(string value)
+    {
+        serverRoomName = value;
+
+        Debug.Log(
+            "服务器房间名修改: " + value
+        );
+    }
+
 
     public void OnClickSelectColor(int index)
     {
