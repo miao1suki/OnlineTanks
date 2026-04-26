@@ -8,6 +8,9 @@ public class MatchManager : NetworkBehaviour
 {
     public static MatchManager Instance;
 
+    [SyncVar]
+    double endTimestamp;
+
     List<PlayerController> GetAllClientPlayers()
     {
         List<PlayerController> result =
@@ -28,6 +31,12 @@ public class MatchManager : NetworkBehaviour
     [SyncVar(hook = nameof(OnRoomStateChanged))]
     public RoomState currentState;
 
+    [SyncVar(hook = nameof(OnPrepareEndChanged))]
+    double prepareEndTimestamp;
+
+    [SyncVar(hook = nameof(OnGenerateEndChanged))]
+    double generateEndTimestamp;
+
     public Transform[] spawnPoints;
 
     List<PlayerController> players =
@@ -39,17 +48,58 @@ public class MatchManager : NetworkBehaviour
     List<PlayerController> spectators =
         new List<PlayerController>();
 
-
+    [Header("准备阶段时长")]
     public float prepareTime = 10f;
+    [Header("地图生成阶段时长")]
+    public float generateTime = 2f;
+    [Header("游戏结算时长")]
     public float settleTime = 5f;
 
     bool preparingStarted;
     bool settling;
+    Coroutine matchFlowRoutine;
 
 
     void Awake()
     {
         Instance = this;
+    }
+
+    void OnPrepareEndChanged(double oldValue, double newValue)
+    {
+        if (!isClient) return;
+
+        RoomCanvasController.Instance?.SetPrepareEnd(newValue);
+    }
+
+    void OnGenerateEndChanged(double oldValue, double newValue)
+    {
+        if (!isClient) return;
+
+        RoomCanvasController.Instance?.SetGenerateEnd(newValue);
+    }
+
+    // 刷新玩家列表
+    void RefreshRoomPlayerUI()
+    {
+        RpcRefreshPlayerList();
+    }
+
+    [ClientRpc]
+    void RpcRefreshPlayerList()
+    {
+        if (RoomCanvasController.Instance == null)
+            return;
+
+        if (currentState != RoomState.Waiting &&
+            currentState != RoomState.Preparing &&
+            currentState != RoomState.Generating)
+            return;
+
+        RoomCanvasController.Instance
+            .RefreshPlayerList(
+                GetAllClientPlayers()
+            );
     }
 
     void OnRoomStateChanged(RoomState oldState,RoomState newState)
@@ -85,14 +135,23 @@ public class MatchManager : NetworkBehaviour
                     .RefreshPlayerList(uiPlayers);
 
                 RoomCanvasController.Instance
-                    .ShowPreparing(prepareTime);
+        .ShowPreparing();
+
+                RoomCanvasController.Instance
+                    .SetPrepareEnd(prepareEndTimestamp);
                 break;
 
 
             case RoomState.Generating:
 
                 RoomCanvasController.Instance
+                    .RefreshPlayerList(uiPlayers);
+
+                RoomCanvasController.Instance
                     .ShowGenerating();
+
+                RoomCanvasController.Instance
+                    .SetGenerateEnd(generateEndTimestamp);
                 break;
 
 
@@ -120,6 +179,7 @@ public class MatchManager : NetworkBehaviour
     public void RegisterPlayer(PlayerController p)
     {
         players.Add(p);
+        RefreshRoomPlayerUI();
 
         switch (currentState)
         {
@@ -144,6 +204,7 @@ public class MatchManager : NetworkBehaviour
     public void UnregisterPlayer(PlayerController p)
     {
         players.Remove(p);
+        RefreshRoomPlayerUI();
 
         if (matchPlayers.Contains(p))
         {
@@ -175,7 +236,11 @@ public class MatchManager : NetworkBehaviour
 
         if (players.Count < 2)
         {
-            StopAllCoroutines();
+            if (matchFlowRoutine != null)
+            {
+                StopCoroutine(matchFlowRoutine);
+                matchFlowRoutine = null;
+            }
 
             preparingStarted = false;
 
@@ -192,51 +257,44 @@ public class MatchManager : NetworkBehaviour
         if (players.Count >= 2 && !preparingStarted)
         {
             preparingStarted = true;
-            StartCoroutine(PreparingRoutine());
+            matchFlowRoutine = StartCoroutine(PreparingRoutine());
         }
     }
 
     IEnumerator PreparingRoutine()
     {
-        ChangeState(
-            RoomState.Preparing
+        ChangeState(RoomState.Preparing);
+
+        prepareEndTimestamp = NetworkTime.time + prepareTime;
+
+        yield return new WaitUntil(() =>
+            NetworkTime.time >= prepareEndTimestamp
         );
 
-        yield return new WaitForSeconds(
-            prepareTime
-        );
+        matchPlayers = new List<PlayerController>(players);
 
-        matchPlayers =
-            new List<PlayerController>(
-                players
-            );
-
-        StartCoroutine(
-            GenerateRoutine()
-        );
+        StartCoroutine(GenerateRoutine());
     }
 
     IEnumerator GenerateRoutine()
     {
-        ChangeState(
-            RoomState.Generating
-        );
+        ChangeState(RoomState.Generating);
 
         int seed =
-            Random.Range(
-                0,
-                999999
-            );
+            Random.Range(0, 999999);
 
         RpcGenerateMap(seed);
 
-        yield return new WaitForSeconds(2f);
+        generateEndTimestamp = NetworkTime.time + generateTime;
+
+        yield return new WaitUntil(() =>
+            NetworkTime.time >= generateEndTimestamp
+        );
 
         SpawnPlayers();
 
-        ChangeState(
-            RoomState.Playing
-        );
+        ChangeState(RoomState.Playing);
+        matchFlowRoutine = null;
     }
 
     void SpawnPlayers()
@@ -402,5 +460,24 @@ public class MatchManager : NetworkBehaviour
         }
 
         Debug.Log("出生点加载完成: " + spawnPoints.Length);
+    }
+    // 退出时清理状态
+    public override void OnStopServer()
+    {
+        StopAllCoroutines();
+
+        players.Clear();
+        matchPlayers.Clear();
+        spectators.Clear();
+
+        preparingStarted = false;
+        settling = false;
+        matchFlowRoutine = null;
+
+    }
+    void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 }

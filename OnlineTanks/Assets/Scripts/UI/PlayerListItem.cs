@@ -15,24 +15,35 @@ public class PlayerListItem : MonoBehaviour
     {
         target = p;
 
-        PlayerData data =
-            p.GetComponent<PlayerData>();
-
-        if (data != null)
-            playerNameText.text =
-                data.playerName;
-        else
-            playerNameText.text =
-                "Player";
+        var data = p.GetComponent<PlayerData>();
 
         kickButton.gameObject.SetActive(!p.isLocalPlayer);
 
         kickButton.onClick.RemoveAllListeners();
-        if(!p.isLocalPlayer)
+        if (!p.isLocalPlayer)
         {
             kickButton.onClick.AddListener(KickPlayer);
         }
 
+        if (data != null)
+        {
+            if (!string.IsNullOrEmpty(data.playerName))
+            {
+                playerNameText.text = data.playerName;
+            }
+            else
+            {
+                data.OnReady += RefreshName;
+            }
+        }
+
+    }
+
+    void RefreshName()
+    {
+        var data = target.GetComponent<PlayerData>();
+        if (data != null)
+            playerNameText.text = data.playerName;
     }
 
     void KickPlayer()

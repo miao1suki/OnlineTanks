@@ -32,6 +32,8 @@ public class NetworkManagerCustom : NetworkManager
             return;
         }
 
+        NetworkClient.Ready();
+
         Debug.Log("网络连接成功（未进入房间）");
         OnConnectionStatusChanged?.Invoke(ConnectionType.Connected);
     }

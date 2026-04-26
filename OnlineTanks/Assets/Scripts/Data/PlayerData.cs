@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerData : NetworkBehaviour
 {
+    public event System.Action OnReady;
+
     [SyncVar(hook = nameof(OnNameChanged))]
     public string playerName;
 
@@ -29,6 +31,7 @@ public class PlayerData : NetworkBehaviour
 
     void OnNameChanged(string oldName, string newName)
     {
+        OnReady?.Invoke();
         Debug.Log($"Ãû×Ö¸üÐÂ: {newName}");
     }
 
