@@ -4,6 +4,8 @@ using Mirror;
 using Mirror.Examples.Common.Controllers.Player;
 public class NetworkManagerCustom : NetworkManager
 {
+    public static NetworkManagerCustom Instance { get; private set; }
+
     // 连接类型枚举
     public enum ConnectionType
     {
@@ -20,6 +22,24 @@ public class NetworkManagerCustom : NetworkManager
     public static Action<string> OnJoinedRoom;
 
     public GameObject hitBoxPrefab;
+
+
+    public override void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        base.Awake();
+    }
+    public override void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 
     // 客户端成功连接
     public override void OnClientConnect()

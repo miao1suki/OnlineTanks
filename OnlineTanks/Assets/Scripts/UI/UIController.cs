@@ -1,4 +1,5 @@
 using Mirror;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using TMPro;
@@ -28,7 +29,7 @@ public class UIController : MonoBehaviour
     string lanRoomName = "新建房间名";
     string serverRoomName = "默认房间名";
 
-    HashSet<string> discovered = new HashSet<string>(); //房间去重
+    HashSet<long> discovered = new HashSet<long>(); //房间去重
     public enum UIMode
     {
         LAN,
@@ -113,14 +114,16 @@ public class UIController : MonoBehaviour
         ClearRoomList();
 
         // 开始搜索
+        LANDiscovery.Instance.StopDiscovery();
+        LANDiscovery.Instance.StartDiscovery();
         RoomService.Instance.StartSearch();
     }
 
     // 收到服务器回应
-    void HandleRoom(string roomName, string address)
+    void HandleRoom(string roomName, string address, long serverId)
     {
-        if (discovered.Contains(address)) return;
-        discovered.Add(address);
+        if (discovered.Contains(serverId)) return;
+        discovered.Add(serverId);
 
         GameObject parent = (uiMode == UIMode.LAN)
             ? lanRoomListParent
@@ -138,12 +141,15 @@ public class UIController : MonoBehaviour
     }
     void OnLANRoomFound(DiscoveryResponse info, IPEndPoint endpoint)
     {
-        HandleRoom(info != null ? info.roomName : endpoint.Address.ToString(),
-               endpoint.Address.ToString());
+        HandleRoom(
+            info != null ? info.roomName : endpoint.Address.ToString(),
+            endpoint.Address.ToString(),
+            info.serverId
+        );
     }
     void OnServerRoomFound(RoomInfo room)
     {
-        HandleRoom(room.roomName, room.address);
+        HandleRoom(room.roomName, room.address, room.address.GetHashCode());
     }
 
 

@@ -4,13 +4,29 @@ using UnityEngine;
 
 public class ServerBootstrap : MonoBehaviour
 {
+    public static ServerBootstrap Instance { get; private set; }
     void Awake()
     {
+
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
         ServicePointManager.SecurityProtocol =
             SecurityProtocolType.Tls12;
 
         Debug.Log(SystemInfo.operatingSystem);
     }
+    void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
 
     void Start()
     {
