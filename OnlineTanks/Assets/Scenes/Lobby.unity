@@ -4608,7 +4608,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 190
+  m_Spacing: 188
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
@@ -7615,7 +7615,6 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 8234219547061203245, guid: e3ed8daccf8ca494ab49c9eb76681e98, type: 3}
-  - {fileID: 1496877014486293102, guid: 96396d1e4b7565943b23fa6ce07a55d6, type: 3}
   - {fileID: 9114772608524288965, guid: 0ac2cfe116a86fd429c7322b36e0d90a, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:

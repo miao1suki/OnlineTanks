@@ -35,9 +35,20 @@ public class RoomCanvasController : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
+        if(Instance != null && Instance != this)
+    {
+            Destroy(gameObject);
+            return;
+        }
 
+        Instance = this;
         root.SetActive(false);
+    }
+
+    void OnEnable()
+    {
+        if (Instance == null)
+            Instance = this;
     }
 
     void Update()

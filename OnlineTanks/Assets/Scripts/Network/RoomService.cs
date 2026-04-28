@@ -6,64 +6,57 @@ public class RoomService : MonoBehaviour
 {
     public static RoomService Instance;
 
-    public enum RoomMode
-    {
-        LAN,
-        Server
-    }
-
-    [Header("当前模式")]
+    public enum RoomMode { LAN, Server }
     public RoomMode mode = RoomMode.LAN;
 
     private LANDiscovery discovery;
-
     public System.Action<DiscoveryResponse, IPEndPoint> OnRoomFound;
 
-
-    private void Awake()
+    void Awake()
     {
-        Instance = this;
-        discovery = FindFirstObjectByType<LANDiscovery>();
-
-        if (discovery != null)
+        if (Instance != null && Instance != this)
         {
-            discovery.OnServerFoundCustom += (info, endpoint) =>
-            {
-                if (mode != RoomMode.LAN) return;
-
-                OnRoomFound?.Invoke(info, endpoint);
-            };
+            Destroy(gameObject);
+            return;
         }
-    }
-    public void SetModeLAN()
-    {
-        mode = RoomMode.LAN;
-        Debug.Log("已切换到 LAN 模式");
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        discovery = FindFirstObjectByType<LANDiscovery>();
+        if (discovery != null)
+            discovery.OnServerFoundCustom += HandleLanServerFound;
     }
 
-    public void SetModeServer()
+    void OnDestroy()
     {
-        mode = RoomMode.Server;
-        Debug.Log("已切换到 Server 模式（HTTP房间）");
+        if (discovery != null)
+            discovery.OnServerFoundCustom -= HandleLanServerFound;
+
+        if (Instance == this)
+            Instance = null;
     }
+
+    void HandleLanServerFound(DiscoveryResponse info, IPEndPoint endpoint)
+    {
+        if (mode != RoomMode.LAN) return;
+        OnRoomFound?.Invoke(info, endpoint);
+    }
+
+    public void SetModeLAN() { mode = RoomMode.LAN; Debug.Log("已切换到 LAN 模式"); }
+    public void SetModeServer() { mode = RoomMode.Server; Debug.Log("已切换到 Server 模式（HTTP房间）"); }
 
     public void StartSearch()
     {
-        if (mode == RoomMode.LAN)
-            StartSearchLAN();
-        else
-            StartSearchServer();
+        if (mode == RoomMode.LAN) StartSearchLAN();
+        else StartSearchServer();
     }
-
-    // LAN模式
 
     public void StartSearchLAN()
     {
+        // 每次搜索前先 StopDiscovery 再 Start，避免残留状态
+        discovery?.StopDiscovery();
         discovery?.StartDiscovery();
     }
-
-
-    // Server模式
 
     public void StartSearchServer()
     {
@@ -73,21 +66,17 @@ public class RoomService : MonoBehaviour
             return;
         }
 
+
         OnlineService.Instance.OnRoomFound = null;
         OnlineService.Instance.OnRoomFound += (room) =>
         {
             Debug.Log("HTTP房间: " + room.roomName);
 
-            var ip = Dns.GetHostAddresses(room.address)[0];
-
+            var ip = System.Net.Dns.GetHostAddresses(room.address)[0];
             var endpoint = new IPEndPoint(ip, room.port);
 
-            var discovery = new DiscoveryResponse
-            {
-                roomName = room.roomName
-            };
-
-            OnRoomFound?.Invoke(discovery, endpoint);
+            var resp = new DiscoveryResponse { roomName = room.roomName };
+            OnRoomFound?.Invoke(resp, endpoint);
         };
 
         OnlineService.Instance.GetRoomList();
@@ -98,6 +87,4 @@ public class RoomService : MonoBehaviour
         NetworkManager.singleton.networkAddress = address;
         NetworkManager.singleton.StartClient();
     }
-
-
 }

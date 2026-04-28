@@ -120,6 +120,9 @@ public class NetworkManagerCustom : NetworkManager
 
         Debug.Log("真正进入游戏场景");
 
+        MatchManager.Instance?.FullReset();
+        RoomCanvasController.Instance?.ResetUI();
+
         OnConnectionStatusChanged?.Invoke(ConnectionType.InRoom);
 
         OnJoinedRoom?.Invoke(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);

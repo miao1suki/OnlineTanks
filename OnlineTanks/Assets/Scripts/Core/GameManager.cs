@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
     public GameObject LobbyCanvas;
     public static GameManager instance;
 
+    bool leavingBySelf = false;
+
     bool cleaning = false;
     private void Awake()
     {
@@ -80,6 +82,7 @@ public class GameManager : MonoBehaviour
     public void LeaveRoom()
     {
         Debug.Log("主动离开房间");
+        leavingBySelf = true;
 
         if (NetworkServer.active && NetworkClient.isConnected)
             NetworkManager.singleton.StopHost();
@@ -93,20 +96,20 @@ public class GameManager : MonoBehaviour
 
     private void OnDisconnected()
     {
-        if (cleaning)
-            return;
-
+        if (cleaning) return;
         cleaning = true;
-
-        Debug.Log("断开连接逻辑");
 
         CleanupNetworkState();
 
-        LANRoomCreator creator =
-            FindFirstObjectByType<LANRoomCreator>();
+        // 只有非主动离开才尝试补偿StopRoom
+        if (!leavingBySelf)
+        {
+            LANRoomCreator creator = FindFirstObjectByType<LANRoomCreator>();
+            if (creator != null)
+                creator.StopRoom();
+        }
 
-        if (creator != null)
-            creator.StopRoom();
+        leavingBySelf = false;
 
         LobbyCanvas?.SetActive(true);
 

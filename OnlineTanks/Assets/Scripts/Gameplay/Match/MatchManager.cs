@@ -71,6 +71,12 @@ public class MatchManager : NetworkBehaviour
         Instance = this;
     }
 
+    void OnEnable()
+    {
+        if (Instance == null)
+            Instance = this;
+    }
+
     void OnPrepareEndChanged(double oldValue, double newValue)
     {
         if (!isClient) return;

@@ -35,8 +35,17 @@ public class LANRoomCreator : MonoBehaviour
         if (!networkManager) networkManager = NetworkManager.singleton;
         if (!discovery) discovery = FindFirstObjectByType<LANDiscovery>();
 
-        networkManager.StopServer();
-        discovery.StopDiscovery();
+        // 先停广播/发现
+        discovery?.StopDiscovery();
+
+        // 再按实际模式停网络
+        if (NetworkServer.active && NetworkClient.isConnected)
+            networkManager.StopHost();
+        else if (NetworkClient.isConnected)
+            networkManager.StopClient();
+        else if (NetworkServer.active)
+            networkManager.StopServer();
+
         Debug.Log("房间已关闭");
     }
 }
