@@ -1,3 +1,4 @@
+using kcp2k;
 using Mirror;
 using System.Net;
 using UnityEngine;
@@ -75,7 +76,13 @@ public class RoomService : MonoBehaviour
             var ip = System.Net.Dns.GetHostAddresses(room.address)[0];
             var endpoint = new IPEndPoint(ip, room.port);
 
-            var resp = new DiscoveryResponse { roomName = room.roomName };
+            var resp = new DiscoveryResponse
+            {
+                roomName = room.roomName,
+                playerCount = room.playerCount,
+                maxPlayers = room.maxPlayers,
+                serverId = room.address.GetHashCode() ^ room.port
+            };
             OnRoomFound?.Invoke(resp, endpoint);
         };
 
@@ -85,6 +92,26 @@ public class RoomService : MonoBehaviour
     public void Connect(string address)
     {
         NetworkManager.singleton.networkAddress = address;
+
+        Debug.Log($"连接服务器(LAN-默认端口): {address} (port 使用本机KCP设置)");
+        NetworkManager.singleton.StartClient();
+    }
+
+    public void Connect(IPEndPoint endpoint)
+    {
+        // address
+        NetworkManager.singleton.networkAddress = endpoint.Address.ToString();
+
+        // port
+        var transport = NetworkManager.singleton.GetComponent<KcpTransport>();
+        if (transport == null)
+        {
+            Debug.LogError("KcpTransport 未挂载，无法设置端口");
+            return;
+        }
+        transport.port = (ushort)endpoint.Port;
+
+        Debug.Log($"连接服务器: {endpoint.Address}:{endpoint.Port}");
         NetworkManager.singleton.StartClient();
     }
 }

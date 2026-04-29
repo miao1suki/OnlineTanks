@@ -37,6 +37,8 @@ public class PlayerListItem : MonoBehaviour
             }
         }
 
+        data.OnReady += RefreshName;
+
     }
 
     void RefreshName()
@@ -59,5 +61,15 @@ public class PlayerListItem : MonoBehaviour
             return;
 
         local.CmdKickPlayer(target.netId);
+    }
+
+    void OnDestroy()
+    {
+        if (target != null)
+        {
+            var data = target.GetComponent<PlayerData>();
+            if (data != null)
+                data.OnReady -= RefreshName;
+        }
     }
 }

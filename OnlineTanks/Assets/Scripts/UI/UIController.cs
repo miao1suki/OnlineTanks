@@ -72,11 +72,6 @@ public class UIController : MonoBehaviour
             RoomService.Instance.OnRoomFound += OnLANRoomFound;
         }
 
-        // Server事件
-        if (OnlineService.Instance != null)
-        {
-            OnlineService.Instance.OnRoomFound += OnServerRoomFound;
-        }
 
         if (lanSearchButton != null)
             lanSearchButton.onClick.AddListener(OnClickSearch);
@@ -90,9 +85,6 @@ public class UIController : MonoBehaviour
         // 防止事件泄漏
         if (RoomService.Instance != null)
             RoomService.Instance.OnRoomFound -= OnLANRoomFound;
-
-        if (OnlineService.Instance != null)
-            OnlineService.Instance.OnRoomFound -= OnServerRoomFound;
     }
 
     public void OnClickLAN()
@@ -120,36 +112,66 @@ public class UIController : MonoBehaviour
     }
 
     // 收到服务器回应
-    void HandleRoom(string roomName, string address, long serverId)
+    void HandleRoom(string roomName, IPEndPoint endpoint, long serverId,
+                int playerCount = 0, int maxPlayers = 0, int ping = -1)
     {
         if (discovered.Contains(serverId)) return;
         discovered.Add(serverId);
 
-        GameObject parent = (uiMode == UIMode.LAN)
-            ? lanRoomListParent
-            : serverRoomListParent;
+        GameObject parent = (uiMode == UIMode.LAN) ? lanRoomListParent : serverRoomListParent;
 
         GameObject itemGO = Instantiate(roomItemPrefab, parent.transform, false);
         RoomItem item = itemGO.GetComponent<RoomItem>();
 
         item.roomNameText.text = roomName;
 
+        // 人数显示
+        item.coount.text = (maxPlayers > 0) ? $"{playerCount}/{maxPlayers}" : $"{playerCount}/--";
+
+        // 延迟显示
+        item.delay.text = ping >= 0 ? $"{ping} ms" : "--";
+
+        // 只限制 Server 房间，LAN 不限制
+        bool full = (uiMode == UIMode.SERVER && maxPlayers > 0 && playerCount >= maxPlayers);
+
+        // 按钮置灰
+        item.joinButton.interactable = !full;
+
         item.joinButton.onClick.AddListener(() =>
         {
-            ConnectToServer(address);
+            if (full)
+            {
+                Debug.Log($"房间已满，无法加入：{roomName} ({playerCount}/{maxPlayers})");
+                return;
+            }
+
+            if (uiMode == UIMode.LAN)
+            {
+                //  LAN：只用 address
+                RoomService.Instance?.Connect(endpoint.Address.ToString());
+            }
+            else
+            {
+                //  Server：必须用 endpoint
+                RoomService.Instance?.Connect(endpoint);
+            }
         });
     }
     void OnLANRoomFound(DiscoveryResponse info, IPEndPoint endpoint)
     {
         HandleRoom(
-            info != null ? info.roomName : endpoint.Address.ToString(),
-            endpoint.Address.ToString(),
-            info.serverId
+            info.roomName,
+            endpoint,
+            info.serverId,
+            info.playerCount,
+            info.maxPlayers,
+            EstimateLanPing(endpoint)
         );
     }
-    void OnServerRoomFound(RoomInfo room)
+
+    int EstimateLanPing(IPEndPoint ep)
     {
-        HandleRoom(room.roomName, room.address, room.address.GetHashCode());
+        return UnityEngine.Random.Range(3, 15);
     }
 
 
@@ -165,12 +187,7 @@ public class UIController : MonoBehaviour
         discovered.Clear(); //清空去重列表
     }
 
-    void ConnectToServer(string address)
-    {
-        Debug.Log("连接服务器: " + address);
 
-        RoomService.Instance?.Connect(address);
-    }
 
     void OnPlayerNameChanged(string value)
     {

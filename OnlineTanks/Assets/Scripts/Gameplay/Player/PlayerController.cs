@@ -1,4 +1,5 @@
 using Mirror;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -158,16 +159,56 @@ public class PlayerController : NetworkBehaviour
         Die();
     }
 
+
     [Command]
     public void CmdKickPlayer(uint targetNetId)
     {
-        if (NetworkServer.spawned.TryGetValue(
-            targetNetId,
-            out NetworkIdentity id))
-        {
-            id.connectionToClient?.Disconnect();
-        }
+        if (!NetworkServer.spawned.TryGetValue(targetNetId, out NetworkIdentity id))
+            return;
+
+        NetworkConnectionToClient targetConn = id.connectionToClient;
+
+        if (targetConn == null)
+            return;
+
+        StartCoroutine(KickFlow(targetConn));
     }
+
+    IEnumerator KickFlow(NetworkConnectionToClient conn)
+    {
+        // 等一帧，确保RPC发送出去
+        yield return null;
+
+        TargetKicked(conn, "您被移出房间");
+
+        // 保证客户端收到
+        yield return new WaitForSeconds(0.1f);
+
+        conn.Disconnect();
+    }
+
+    [TargetRpc]
+    void TargetKicked(
+     NetworkConnection conn,
+     string msg
+ )
+    {
+        KickToastUI.Instance?.Show(msg);
+    }
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
+
+        MatchManager.Instance?.UnregisterPlayer(this);
+    }
+
+    public override void OnStopServer()
+    {
+        base.OnStopServer();
+
+        MatchManager.Instance?.UnregisterPlayer(this);
+    }
+
 
     [Command]
     void CmdFire(Vector2 pos, Vector2 dir)

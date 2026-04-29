@@ -12,8 +12,11 @@ public class DiscoveryRequest : NetworkMessage { }
 public class DiscoveryResponse : NetworkMessage
 {
     public long serverId;
-    public string roomName; //·¿¼äÃû
+    public string roomName;
     public string uri;
+
+    public int playerCount;
+    public int maxPlayers;
 }
 
 public class LANDiscovery : NetworkDiscoveryBase<DiscoveryRequest, DiscoveryResponse>
@@ -48,7 +51,13 @@ public class LANDiscovery : NetworkDiscoveryBase<DiscoveryRequest, DiscoveryResp
         {
             serverId = ServerId,
             roomName = currentRoomName,
-            uri = transport.ServerUri().ToString()
+            uri = transport.ServerUri().ToString(),
+
+            playerCount =
+       NetworkServer.connections.Count,
+
+            maxPlayers =
+       NetworkManager.singleton.maxConnections
         };
     }
 
