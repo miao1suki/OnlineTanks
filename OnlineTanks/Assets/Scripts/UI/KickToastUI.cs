@@ -1,18 +1,26 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class KickToastUI : MonoBehaviour
 {
     public static KickToastUI Instance;
 
-    [Header("提示文字")]
-    public TMP_Text tipText;
+    [Header("Lobby提示文字")]
+    public TMP_Text lobbyText;
 
-    [Header("淡出时间")]
-    public float fadeDuration = 3f;
+    [Header("Game提示文字")]
+    public TMP_Text gameText;
 
-    Coroutine fadeRoutine;
+    [Header("默认显示总时间")]
+    public float totalDuration = 6f;
+
+    [Header("默认淡出时间")]
+    public float fadeDuration = 2f;
+
+    Coroutine lobbyRoutine;
+    Coroutine gameRoutine;
 
     void Awake()
     {
@@ -23,72 +31,114 @@ public class KickToastUI : MonoBehaviour
         }
 
         Instance = this;
-
         DontDestroyOnLoad(gameObject);
 
-        if (tipText != null)
-        {
-            tipText.text = "";
+        InitText(lobbyText);
+        InitText(gameText);
+    }
 
-            Color c = tipText.color;
-            c.a = 0;
-            tipText.color = c;
+    void InitText(TMP_Text text)
+    {
+        if (text == null) return;
+
+        text.text = "";
+        Color c = text.color;
+        c.a = 0;
+        text.color = c;
+    }
+
+    // 默认 Lobby
+    public void Show(string msg)
+    {
+        Show(msg, UIContext.Lobby, totalDuration, fadeDuration);
+    }
+
+    public void Show(string msg, UIContext context)
+    {
+        Show(msg, context, totalDuration, fadeDuration);
+    }
+
+    public void Show(string msg, UIContext context, float totalTime, float fadeTime)
+    {
+        TMP_Text target = GetTargetText(context);
+        if (target == null) return;
+
+        // 选对应 coroutine
+        if (context == UIContext.Lobby)
+        {
+            if (lobbyRoutine != null)
+                StopCoroutine(lobbyRoutine);
+
+            lobbyRoutine = StartCoroutine(FadeRoutine(msg, target, totalTime, fadeTime));
+        }
+        else
+        {
+            if (gameRoutine != null)
+                StopCoroutine(gameRoutine);
+
+            gameRoutine = StartCoroutine(FadeRoutine(msg, target, totalTime, fadeTime));
         }
     }
 
-    public void Show(string msg)
+    TMP_Text GetTargetText(UIContext context)
     {
-        if (tipText == null)
-            return;
-
-        if (fadeRoutine != null)
-            StopCoroutine(fadeRoutine);
-
-        fadeRoutine =
-            StartCoroutine(
-                FadeMessageRoutine(msg)
-            );
+        return context switch
+        {
+            UIContext.Lobby => lobbyText,
+            UIContext.Game => gameText,
+            _ => lobbyText
+        };
     }
 
-    IEnumerator FadeMessageRoutine(string msg)
+    ref Coroutine GetRoutineRef(UIContext context)
     {
-        tipText.text = msg;
+        return ref (context == UIContext.Game ? ref gameRoutine : ref lobbyRoutine);
+    }
 
-        Color c = tipText.color;
+    IEnumerator FadeRoutine(string msg, TMP_Text target, float totalTime, float fadeTime)
+    {
+        target.text = msg;
+
+        float holdTime = Mathf.Max(0, totalTime - fadeTime);
+
+        Color c = target.color;
         c.a = 1f;
-        tipText.color = c;
+        target.color = c;
 
-        float t = 0;
+        // ===== 1. 全亮阶段 =====
+        if (holdTime > 0)
+            yield return new WaitForSeconds(holdTime);
 
-        while (t < fadeDuration)
+        // ===== 2. 淡出阶段 =====
+        float t = 0f;
+
+        while (t < fadeTime)
         {
             t += Time.deltaTime;
 
-            float alpha =
-                Mathf.Lerp(
-                    1f,
-                    0f,
-                    t / fadeDuration
-                );
+            float alpha = Mathf.Lerp(1f, 0f, t / fadeTime);
 
-            c = tipText.color;
+            c = target.color;
             c.a = alpha;
-            tipText.color = c;
+            target.color = c;
 
             yield return null;
         }
 
-        tipText.text = "";
+        target.text = "";
 
         c.a = 0;
-        tipText.color = c;
+        target.color = c;
 
-        fadeRoutine = null;
+        if (target == lobbyText)
+            lobbyRoutine = null;
+        else
+            gameRoutine = null;
     }
+}
 
-    void OnDestroy()
-    {
-        if (Instance == this)
-            Instance = null;
-    }
+public enum UIContext
+{
+    Lobby,
+    Game
 }

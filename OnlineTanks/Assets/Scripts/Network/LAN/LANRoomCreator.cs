@@ -33,7 +33,6 @@ public class LANRoomCreator : MonoBehaviour
     {
         if (!networkManager) networkManager = NetworkManager.singleton;
         if (!discovery) discovery = FindFirstObjectByType<LANDiscovery>();
-        GameManager.instance?.SetLanHost(true);
 
 
 
@@ -70,7 +69,6 @@ public class LANRoomCreator : MonoBehaviour
         discovery?.StopDiscovery();
 
 
-        GameManager.instance?.SetLanHost(false);
         Debug.Log("房间已关闭");
     }
 }

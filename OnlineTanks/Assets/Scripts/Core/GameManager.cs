@@ -6,7 +6,6 @@ public class GameManager : MonoBehaviour
     public GameObject[] DontDestroy;
     public GameObject LobbyCanvas;
     public static GameManager instance;
-    public bool IsLanHost { get; private set; }
 
     bool leavingBySelf = false;
 
@@ -82,7 +81,9 @@ public class GameManager : MonoBehaviour
     }
     public void LeaveRoom()
     {
-        if (IsLanHost && NetworkServer.active && NetworkClient.isConnected)
+        bool isHost = NetworkServer.active && NetworkClient.active;
+
+        if (isHost && NetworkClient.isConnected)
         {
             Debug.Log("LAN HostÍË³ö -> Application.Quit()");
             Application.Quit();
@@ -138,10 +139,6 @@ public class GameManager : MonoBehaviour
         StopAllCoroutines();
     }
 
-    public void SetLanHost(bool value)
-    {
-        IsLanHost = value;
-    }
 
     public void ExitGame()
     {

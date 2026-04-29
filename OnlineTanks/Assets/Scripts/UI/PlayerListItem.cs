@@ -17,28 +17,47 @@ public class PlayerListItem : MonoBehaviour
 
         var data = p.GetComponent<PlayerData>();
 
-        kickButton.gameObject.SetActive(!p.isLocalPlayer);
+        PlayerController local =
+            NetworkClient.localPlayer?.GetComponent<PlayerController>();
 
-        kickButton.onClick.RemoveAllListeners();
-        if (!p.isLocalPlayer)
+        if (local == null)
+            return;
+
+        bool localIsHost =
+            NetworkServer.active && NetworkClient.active;
+
+        bool targetIsLocal = p.isLocalPlayer;
+
+        bool targetIsHost =
+            p.isHostPlayer; 
+
+        bool canKick = false;
+
+        if (localIsHost)
         {
-            kickButton.onClick.AddListener(KickPlayer);
+            // Host：不能踢自己
+            canKick = !targetIsLocal;
+        }
+        else
+        {
+            // 普通玩家：
+            // 不能踢自己 + 不能踢 host
+            canKick = !targetIsLocal && !targetIsHost;
         }
 
-        if (data != null)
+        kickButton.gameObject.SetActive(canKick);
+
+        kickButton.onClick.RemoveAllListeners();
+
+        if (canKick)
+            kickButton.onClick.AddListener(KickPlayer);
+
+        if (data != null && !string.IsNullOrEmpty(data.playerName))
         {
-            if (!string.IsNullOrEmpty(data.playerName))
-            {
-                playerNameText.text = data.playerName;
-            }
-            else
-            {
-                data.OnReady += RefreshName;
-            }
+            playerNameText.text = data.playerName;
         }
 
         data.OnReady += RefreshName;
-
     }
 
     void RefreshName()

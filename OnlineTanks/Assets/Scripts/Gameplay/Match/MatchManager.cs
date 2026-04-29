@@ -11,22 +11,9 @@ public class MatchManager : NetworkBehaviour
     [SyncVar]
     double endTimestamp;
 
-    List<PlayerController> GetAllClientPlayers()
-    {
-        List<PlayerController> result =
-            new List<PlayerController>();
-
-        foreach (var kv in NetworkClient.spawned)
-        {
-            PlayerController p =
-                kv.Value.GetComponent<PlayerController>();
-
-            if (p != null)
-                result.Add(p);
-        }
-
-        return result;
-    }
+    public List<uint> allPlayers = new List<uint>();
+    public readonly SyncList<uint> allPlayerIds = new SyncList<uint>();
+    List<uint> matchPlayers = new List<uint>();
 
     [SyncVar(hook = nameof(OnRoomStateChanged))]
     public RoomState currentState;
@@ -39,14 +26,7 @@ public class MatchManager : NetworkBehaviour
 
     public Transform[] spawnPoints;
 
-    List<PlayerController> players =
-        new List<PlayerController>();
 
-    List<PlayerController> matchPlayers =
-        new List<PlayerController>();
-
-    List<PlayerController> spectators =
-        new List<PlayerController>();
 
     [Header("准备阶段时长")]
     public float prepareTime = 10f;
@@ -75,6 +55,34 @@ public class MatchManager : NetworkBehaviour
     {
         if (Instance == null)
             Instance = this;
+
+        allPlayerIds.Callback += OnPlayerListChanged;
+    }
+
+    void OnDisable()
+    {
+        allPlayerIds.Callback -= OnPlayerListChanged;
+    }
+
+    void OnPlayerListChanged(SyncList<uint>.Operation op, int index, uint oldItem, uint newItem)
+    {
+        if (!isClient) return;
+
+        StartCoroutine(DelayUI());
+    }
+
+    IEnumerator DelayUI()
+    {
+        yield return null; // 等 spawn 完成
+        ApplyPlayerListToUI();
+    }
+
+    public PlayerController GetPlayer(uint netId)
+    {
+        if (NetworkClient.spawned.TryGetValue(netId, out var id))
+            return id.GetComponent<PlayerController>();
+
+        return null;
     }
 
     void OnPrepareEndChanged(double oldValue, double newValue)
@@ -91,14 +99,7 @@ public class MatchManager : NetworkBehaviour
         RoomCanvasController.Instance?.SetGenerateEnd(newValue);
     }
 
-    // 刷新玩家列表
-    void RefreshRoomPlayerUI()
-    {
-        RpcRefreshPlayerList();
-    }
-
-    [ClientRpc]
-    void RpcRefreshPlayerList()
+    void ApplyPlayerListToUI()
     {
         if (RoomCanvasController.Instance == null)
             return;
@@ -108,10 +109,19 @@ public class MatchManager : NetworkBehaviour
             currentState != RoomState.Generating)
             return;
 
-        RoomCanvasController.Instance
-            .RefreshPlayerList(
-                GetAllClientPlayers()
-            );
+        List<PlayerController> list = new List<PlayerController>();
+
+        foreach (uint id in allPlayerIds)
+        {
+            if (NetworkClient.spawned.TryGetValue(id, out var identity))
+            {
+                var p = identity.GetComponent<PlayerController>();
+                if (p != null)
+                    list.Add(p);
+            }
+        }
+
+        RoomCanvasController.Instance.RefreshPlayerList(list);
     }
 
     void OnRoomStateChanged(RoomState oldState,RoomState newState)
@@ -126,8 +136,17 @@ public class MatchManager : NetworkBehaviour
         if (RoomCanvasController.Instance == null)
             return;
 
-        List<PlayerController> uiPlayers =
-            GetAllClientPlayers();
+        List<PlayerController> uiPlayers = new List<PlayerController>();
+
+        foreach (uint id in allPlayerIds)
+        {
+            if (NetworkClient.spawned.TryGetValue(id, out var identity))
+            {
+                var p = identity.GetComponent<PlayerController>();
+                if (p != null)
+                    uiPlayers.Add(p);
+            }
+        }
 
         switch (state)
         {
@@ -201,27 +220,33 @@ public class MatchManager : NetworkBehaviour
 
     public void RegisterPlayer(PlayerController p)
     {
-        players.Add(p);
-        TargetSyncState(p.connectionToClient);
-        RefreshRoomPlayerUI();
+        uint id = p.netId;
 
-        switch (currentState)
+        if (!isServer) return;
+
+        if (!allPlayers.Contains(id))
+            allPlayers.Add(id);
+        // 第一个加入的是host
+        if (allPlayers.Count == 1)
         {
-            case RoomState.Waiting:
-                CheckCanStart();
-                break;
+            p.isHostPlayer = true;
+        }
 
-            case RoomState.Preparing:
-                break;
 
-            case RoomState.Playing:
-                spectators.Add(p);
+        if (!allPlayerIds.Contains(id))
+            allPlayerIds.Add(id);
 
-                p.SetSpawnState(Vector3.zero, false);
-                TargetShowSpectatorMsg(
-                    p.connectionToClient
-                );
-                break;
+
+        TargetSyncState(p.connectionToClient);
+
+        if (currentState == RoomState.Waiting)
+            CheckCanStart();
+
+
+        else if (currentState == RoomState.Playing || currentState == RoomState.Generating)
+        {
+            p.SetSpawnState(Vector3.zero, false);
+            TargetShowSpectatorMsg(p.connectionToClient);
         }
     }
 
@@ -235,38 +260,20 @@ public class MatchManager : NetworkBehaviour
 
     public void UnregisterPlayer(PlayerController p)
     {
-        players.Remove(p);
-        RefreshRoomPlayerUI();
+        uint id = p.netId;
 
-        if (matchPlayers.Contains(p))
+        if (!isServer) return;
+
+        allPlayers.Remove(id);
+        allPlayerIds.Remove(id);
+
+
+        if (currentState == RoomState.Playing)
         {
-            matchPlayers.Remove(p);
-
-            if (currentState == RoomState.Playing)
-            {
-                if (matchPlayers.Count == 1)
-                {
-                    StartCoroutine(
-                        SettlementRoutine(
-                            matchPlayers[0]
-                        )
-                    );
-
-                    return;
-                }
-
-                if (matchPlayers.Count == 0)
-                {
-                    StartCoroutine(
-                        SettlementRoutine(null)
-                    );
-
-                    return;
-                }
-            }
+            OnPlayerDead(p);
         }
 
-        if (players.Count < 2)
+        if (allPlayers.Count < 2)
         {
             if (matchFlowRoutine != null)
             {
@@ -275,18 +282,15 @@ public class MatchManager : NetworkBehaviour
             }
 
             preparingStarted = false;
-
             ChangeState(RoomState.Waiting);
         }
     }
 
     void CheckCanStart()
     {
-        Debug.Log(
-        "当前人数: " +
-        players.Count
-    );
-        if (players.Count >= 2 && !preparingStarted)
+        Debug.Log("当前人数: " + allPlayers.Count);
+
+        if (allPlayers.Count >= 2 && !preparingStarted)
         {
             preparingStarted = true;
             matchFlowRoutine = StartCoroutine(PreparingRoutine());
@@ -303,7 +307,7 @@ public class MatchManager : NetworkBehaviour
             NetworkTime.time >= prepareEndTimestamp
         );
 
-        matchPlayers = new List<PlayerController>(players);
+        matchPlayers = new List<uint>(allPlayerIds);
 
         StartCoroutine(GenerateRoutine());
     }
@@ -336,8 +340,14 @@ public class MatchManager : NetworkBehaviour
             CacheSpawnPoints();
         }
 
-        foreach (var p in matchPlayers)
+        foreach (uint id in matchPlayers)
         {
+            if (!NetworkServer.spawned.TryGetValue(id, out NetworkIdentity identity))
+                continue;
+
+            PlayerController p = identity.GetComponent<PlayerController>();
+            p.isHostPlayer = (id == matchPlayers[0]); // 第一个进房的人
+
             Vector3 spawnPos = GetRandomSpawn();
 
             // 1. 服务器重置状态
@@ -371,27 +381,36 @@ public class MatchManager : NetworkBehaviour
 
     public void OnPlayerDead(PlayerController dead)
     {
-        if (!matchPlayers.Contains(dead))
+        uint id = dead.netId;
+
+        if (!allPlayerIds.Contains(id))
             return;
 
-        matchPlayers.Remove(dead);
+        if (currentState != RoomState.Playing)
+            return;
 
-        if (matchPlayers.Count == 1)
+        // 从临时比赛集合中判断
+        List<uint> alive = new List<uint>();
+
+        foreach (uint pid in allPlayerIds)
         {
-            StartCoroutine(
-                SettlementRoutine(
-                    matchPlayers[0]
-                )
-            );
+            if (NetworkServer.spawned.TryGetValue(pid, out var identity))
+            {
+                var pc = identity.GetComponent<PlayerController>();
+                if (pc != null && pc.isAlive)
+                    alive.Add(pid);
+            }
         }
 
-        else if (matchPlayers.Count == 0)
+        if (alive.Count == 1)
         {
-            StartCoroutine(
-                SettlementRoutine(
-                    null
-                )
-            );
+            StartCoroutine(SettlementRoutine(
+                NetworkServer.spawned[alive[0]].GetComponent<PlayerController>()
+            ));
+        }
+        else if (alive.Count == 0)
+        {
+            StartCoroutine(SettlementRoutine(null));
         }
     }
 
@@ -413,7 +432,7 @@ public class MatchManager : NetworkBehaviour
 
             preparingStarted = false;
 
-            if (players.Count >= 2)
+            if (allPlayerIds.Count >= 2)
                 CheckCanStart();
             else
                 ChangeState(RoomState.Waiting);
@@ -438,9 +457,7 @@ public class MatchManager : NetworkBehaviour
     [TargetRpc]
     void TargetShowSpectatorMsg(NetworkConnection conn)
     {
-        Debug.Log(
-            "游戏进行中，请等待本场比赛结束"
-        );
+        KickToastUI.Instance?.Show("游戏进行中，请等待本场比赛结束", UIContext.Game);
     }
 
     [ClientRpc]
@@ -498,9 +515,7 @@ public class MatchManager : NetworkBehaviour
     {
         StopAllCoroutines();
 
-        players.Clear();
         matchPlayers.Clear();
-        spectators.Clear();
 
         preparingStarted = false;
         settling = false;
@@ -512,9 +527,7 @@ public class MatchManager : NetworkBehaviour
     {
         StopAllCoroutines();
 
-        players.Clear();
         matchPlayers.Clear();
-        spectators.Clear();
 
         preparingStarted = false;
         settling = false;

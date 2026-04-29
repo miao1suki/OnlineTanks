@@ -1,5 +1,6 @@
 using Mirror;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,6 +17,9 @@ public class PlayerController : NetworkBehaviour
 
     [SyncVar(hook = nameof(OnAliveChanged))]
     public bool isAlive = true;
+
+    [SyncVar(hook = nameof(OnHostChanged))]
+    public bool isHostPlayer;
 
     PlayerInputHandler input;
     // 统一入口锁
@@ -110,6 +114,34 @@ public class PlayerController : NetworkBehaviour
         foreach (var s in sprites)
             s.enabled = aliveState;
     }
+    void OnHostChanged(bool oldValue, bool newValue)
+    {
+        RoomCanvasController.Instance?.RefreshPlayerList(
+            GetCurrentPlayers()
+        );
+    }
+
+    List<PlayerController> GetCurrentPlayers()
+    {
+        List<PlayerController> list =
+            new List<PlayerController>();
+
+        foreach (uint id in MatchManager.Instance.allPlayerIds)
+        {
+            if (NetworkClient.spawned.TryGetValue(
+                id,
+                out NetworkIdentity identity))
+            {
+                PlayerController p =
+                    identity.GetComponent<PlayerController>();
+
+                if (p != null)
+                    list.Add(p);
+            }
+        }
+
+        return list;
+    }
 
     public void Die()
     {
@@ -193,7 +225,7 @@ public class PlayerController : NetworkBehaviour
      string msg
  )
     {
-        KickToastUI.Instance?.Show(msg);
+        KickToastUI.Instance?.Show(msg, UIContext.Lobby);
     }
     public override void OnStopClient()
     {
