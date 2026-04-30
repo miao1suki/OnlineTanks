@@ -112,7 +112,7 @@ public class UIController : MonoBehaviour
     }
 
     // 收到服务器回应
-    void HandleRoom(string roomName, IPEndPoint endpoint, long serverId,
+    async void HandleRoom(string roomName, IPEndPoint endpoint, long serverId,
                 int playerCount = 0, int maxPlayers = 0, int ping = -1)
     {
         if (discovered.Contains(serverId)) return;
@@ -129,7 +129,21 @@ public class UIController : MonoBehaviour
         item.coount.text = (maxPlayers > 0) ? $"{playerCount}/{maxPlayers}" : $"{playerCount}/--";
 
         // 延迟显示
-        item.delay.text = ping >= 0 ? $"{ping} ms" : "--";
+        // 先显示占位
+        item.delay.text = "检测中...";
+
+        // 记住这次创建的GO引用（用于await回来后判断是否已被销毁）
+        GameObject itemRef = itemGO;
+
+        // 异步Ping
+        int realPing = await PingUtility.GetPing(endpoint.Address);
+
+        // await回来后，有可能列表被清了，itemGO 已经没了
+        if (itemRef == null || item == null)
+            return;
+
+        item.delay.text = realPing >= 0 ? $"{realPing} ms" : "--";
+
 
         // 只限制 Server 房间，LAN 不限制
         bool full = (uiMode == UIMode.SERVER && maxPlayers > 0 && playerCount >= maxPlayers);
