@@ -155,7 +155,7 @@ public class UIController : MonoBehaviour
         {
             if (full)
             {
-                Debug.Log($"房间已满，无法加入：{roomName} ({playerCount}/{maxPlayers})");
+                KickToastUI.Instance?.Show("房间已满，无法加入", UIContext.Lobby);
                 return;
             }
 
