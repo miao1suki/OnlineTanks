@@ -24,6 +24,12 @@ public class MatchManager : NetworkBehaviour
     [SyncVar(hook = nameof(OnGenerateEndChanged))]
     double generateEndTimestamp;
 
+    [SyncVar(hook = nameof(OnMapSeedChanged))]
+    public long currentMapSeed = 0;
+
+    [SyncVar]
+    public bool hasMapSeed = false;
+
     public Transform[] spawnPoints;
 
 
@@ -75,6 +81,16 @@ public class MatchManager : NetworkBehaviour
     {
         yield return null; // 等 spawn 完成
         ApplyPlayerListToUI();
+    }
+
+    void OnMapSeedChanged(long oldValue, long newValue)
+    {
+        if (!isClient) return;
+
+        // 有些情况下 seed 还没生效或未生成
+        if (!hasMapSeed) return;
+
+        WallVisibilityController.Instance?.ApplySeed(newValue);
     }
 
     public PlayerController GetPlayer(uint netId)
@@ -216,6 +232,10 @@ public class MatchManager : NetworkBehaviour
         // 强制刷新时间
         RoomCanvasController.Instance?.SetPrepareEnd(prepareEndTimestamp);
         RoomCanvasController.Instance?.SetGenerateEnd(generateEndTimestamp);
+
+        // 客户端启动后如果seed已同步，直接生成
+        if (hasMapSeed)
+            WallVisibilityController.Instance?.ApplySeed(currentMapSeed);
     }
 
     public void RegisterPlayer(PlayerController p)
@@ -256,6 +276,10 @@ public class MatchManager : NetworkBehaviour
         ApplyRoomUI(currentState);
         RoomCanvasController.Instance?.SetPrepareEnd(prepareEndTimestamp);
         RoomCanvasController.Instance?.SetGenerateEnd(generateEndTimestamp);
+
+        // 刚进房就补刷一次地图
+        if (hasMapSeed)
+            WallVisibilityController.Instance?.ApplySeed(currentMapSeed);
     }
 
     public void UnregisterPlayer(PlayerController p)
@@ -316,19 +340,21 @@ public class MatchManager : NetworkBehaviour
     {
         ChangeState(RoomState.Generating);
 
-        int seed =
-            Random.Range(0, 999999);
+        long seed = ((long)Random.Range(int.MinValue, int.MaxValue) << 32)
+                    ^ (uint)Random.Range(int.MinValue, int.MaxValue);
 
+        //  写入SyncVar（晚加入的人也能拿到）
+        currentMapSeed = seed;
+        hasMapSeed = true;
+
+        // 仍然可以保留RPC让“当前在线的人立刻生成”
         RpcGenerateMap(seed);
 
         generateEndTimestamp = NetworkTime.time + generateTime;
 
-        yield return new WaitUntil(() =>
-            NetworkTime.time >= generateEndTimestamp
-        );
+        yield return new WaitUntil(() => NetworkTime.time >= generateEndTimestamp);
 
         SpawnPlayers();
-
         ChangeState(RoomState.Playing);
         matchFlowRoutine = null;
     }
@@ -371,7 +397,7 @@ public class MatchManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    void RpcGenerateMap(int seed)
+    void RpcGenerateMap(long seed)
     {
         Debug.Log(
             "根据随机种子生成地图: " +

@@ -34,7 +34,8 @@ public class PlayerHitBox : NetworkBehaviour
         if (bullet == null) return;
 
         if (owner == null || !owner.isAlive) return;
-        if (bullet.ownerId == owner.netId) return;
+        // мФ╪рвтик
+        //if (bullet.ownerId == owner.netId) return;
 
         owner.Die();
         bullet.ReturnPool();

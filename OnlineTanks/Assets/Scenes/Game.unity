@@ -12905,7 +12905,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WallVisibilityController
   wallRoot: {fileID: 1123174051}
-  showRatio: 0.35
+  showRatio: 0.284
   showCount: -1
   autoCollectOnAwake: 1
 --- !u!4 &538199615
