@@ -377,6 +377,9 @@ public class MatchManager : NetworkBehaviour
             "根据随机种子生成地图: " +
             seed
         );
+
+        // 所有端收到seed后，用同样算法点亮同样的墙
+        WallVisibilityController.Instance?.ApplySeed(seed);
     }
 
     public void OnPlayerDead(PlayerController dead)
