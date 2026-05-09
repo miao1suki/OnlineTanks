@@ -347,6 +347,9 @@ public class MatchManager : NetworkBehaviour
         currentMapSeed = seed;
         hasMapSeed = true;
 
+        // 保证sever服务器可以生成种子
+        WallVisibilityController.Instance?.ApplySeed(seed);
+
         // 仍然可以保留RPC让“当前在线的人立刻生成”
         RpcGenerateMap(seed);
 
@@ -399,6 +402,11 @@ public class MatchManager : NetworkBehaviour
     [ClientRpc]
     void RpcGenerateMap(long seed)
     {
+
+        // Host已经执行过
+        if (isServer)
+            return;
+
         Debug.Log(
             "根据随机种子生成地图: " +
             seed

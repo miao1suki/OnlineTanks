@@ -40,12 +40,25 @@ public class ServerHeartbeat : MonoBehaviour
 
         var transport = NetworkManager.singleton.transport;
 
+        int port = GetPort(transport);
+
+        // 在线人数
+        int playerCount = NetworkServer.connections.Count;
+
+        // maxPlayers：用 NetworkManager 的 maxConnections（Dedicated Server 应该设置过）
+        int maxPlayers = NetworkManager.singleton.maxConnections;
+
         WWWForm form = new WWWForm();
-        form.AddField("port", GetPort(transport));
+        form.AddField("port", port);
+        form.AddField("playerCount", playerCount);
+        form.AddField("maxPlayers", maxPlayers);
 
         UnityWebRequest www = UnityWebRequest.Post(url, form);
         www.certificateHandler = new IgnoreSSL();
         yield return www.SendWebRequest();
+
+        if (www.result != UnityWebRequest.Result.Success)
+            Debug.LogWarning("Heartbeat失败: " + www.error);
     }
 
     int GetPort(Transport transport)

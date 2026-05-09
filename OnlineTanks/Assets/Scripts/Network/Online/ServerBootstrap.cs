@@ -5,6 +5,7 @@ using UnityEngine;
 public class ServerBootstrap : MonoBehaviour
 {
     public static ServerBootstrap Instance { get; private set; }
+    int maxPlayers = 4;
     void Awake()
     {
 
@@ -32,6 +33,7 @@ public class ServerBootstrap : MonoBehaviour
     {
         bool isServerBuild = false;
         int port = 7777;
+        int maxPlayers = 4;
 
         string[] args = System.Environment.GetCommandLineArgs();
 
@@ -46,6 +48,11 @@ public class ServerBootstrap : MonoBehaviour
             {
                 int.TryParse(args[i + 1], out port);
             }
+
+            if (args[i] == "-maxPlayers" && i + 1 < args.Length)
+            {
+                int.TryParse(args[i + 1], out maxPlayers);
+            }
         }
 
         // 客户端直接退出，不执行服务端逻辑
@@ -58,6 +65,7 @@ public class ServerBootstrap : MonoBehaviour
         Debug.Log("Dedicated Server启动，端口：" + port);
 
         var manager = NetworkManager.singleton;
+        manager.maxConnections = maxPlayers;
 
         if (manager == null)
         {

@@ -41,6 +41,20 @@ public class NetworkManagerCustom : NetworkManager
             Instance = null;
     }
 
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        // 注册：服务端拒绝原因
+        NetworkClient.RegisterHandler<ServerRejectMessage>(OnServerReject, false);
+    }
+
+    void OnServerReject(ServerRejectMessage msg)
+    {
+        // Lobby 场景里显示
+        KickToastUI.Instance?.Show(msg.reason, UIContext.Lobby);
+    }
+
     // 客户端成功连接
     public override void OnClientConnect()
     {
@@ -106,6 +120,17 @@ public class NetworkManagerCustom : NetworkManager
     //服务器生成玩家实例
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
+        // numPlayers = 已经在房间里的玩家数量（已经AddPlayerForConnection的）
+        if (numPlayers >= maxConnections)
+        {
+            // 发送原因给客户端
+            conn.Send(new ServerRejectMessage { reason = "房间已满，无法加入" });
+
+            // 再断开
+            conn.Disconnect();
+            return;
+        }
+
         GameObject player = Instantiate(playerPrefab);
 
         player.transform.position = Vector3.zero;
@@ -157,6 +182,11 @@ public class NetworkManagerCustom : NetworkManager
 
             MatchManager.Instance?.OnServerGameSceneReady();
         }
+    }
+
+    public struct ServerRejectMessage : NetworkMessage
+    {
+        public string reason;
     }
 }
 

@@ -90,10 +90,6 @@ public class KickToastUI : MonoBehaviour
         };
     }
 
-    ref Coroutine GetRoutineRef(UIContext context)
-    {
-        return ref (context == UIContext.Game ? ref gameRoutine : ref lobbyRoutine);
-    }
 
     IEnumerator FadeRoutine(string msg, TMP_Text target, float totalTime, float fadeTime)
     {
