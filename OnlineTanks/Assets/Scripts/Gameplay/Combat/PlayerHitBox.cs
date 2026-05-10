@@ -33,6 +33,11 @@ public class PlayerHitBox : NetworkBehaviour
         Bullet bullet = other.GetComponentInParent<Bullet>();
         if (bullet == null) return;
 
+        // 自伤过滤
+        if (bullet.ignoreSelfHit && bullet.ownerId == ownerId)
+            return;
+
+        // 正常伤害逻辑
         if (owner == null || !owner.isAlive) return;
 
         owner.Die();

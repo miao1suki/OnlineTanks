@@ -302,8 +302,11 @@ MonoBehaviour:
   fireCooldown: 0.5
   firePoint: {fileID: 4679118016207729481}
   hitBox: {fileID: 0}
+  laserDotPrefab: {fileID: 723091682928860756, guid: af19aa89a0b7eb6449e6a9a870350dfb, type: 3}
+  laserDotLife: 0.3
   isAlive: 1
   isHostPlayer: 0
+  currentFireMode: 0
 --- !u!114 &4393032887002052400
 MonoBehaviour:
   m_ObjectHideFlags: 0

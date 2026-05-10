@@ -9,6 +9,11 @@ public class Bullet : NetworkBehaviour
     public uint ownerId;
     public uint shotId; // 本次发射编号（同一个owner下唯一）
 
+    [HideInInspector]
+    public bool isBigBullet;
+
+    public bool ignoreSelfHit = false;
+
     Rigidbody2D rb;
 
     void Awake()
@@ -24,16 +29,36 @@ public class Bullet : NetworkBehaviour
 
     public void Launch(Vector2 dir)
     {
-        rb.linearVelocity = dir.normalized * speed;
+        rb.linearVelocity =
+            dir.normalized * speed;
+
+        if (isBigBullet)
+        {
+            transform.localScale = Vector3.one * 10f;
+        }
+        else
+        {
+            transform.localScale = Vector3.one * 3f;
+        }
 
         CancelInvoke();
+
         Invoke(nameof(ReturnPool), life);
     }
 
-    public void ReturnPool()
+    public virtual void ReturnPool()
     {
         CancelInvoke();
+
         rb.linearVelocity = Vector2.zero;
-        BulletPool.Instance.ReturnBullet(ownerId, gameObject);
+
+        isBigBullet = false;
+
+        transform.localScale = Vector3.one * 3f;
+
+        BulletPool.Instance.ReturnBullet(
+            ownerId,
+            gameObject
+        );
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public class ServerBootstrap : MonoBehaviour
 {
     public static ServerBootstrap Instance { get; private set; }
-    int maxPlayers = 4;
+    //int maxPlayers = 4;
     void Awake()
     {
 

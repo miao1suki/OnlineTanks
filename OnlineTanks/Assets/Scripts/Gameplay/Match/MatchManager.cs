@@ -7,6 +7,7 @@ using System.Linq;
 public class MatchManager : NetworkBehaviour
 {
     public static MatchManager Instance;
+    public GameObject pickupPrefab;
 
     [SyncVar]
     double endTimestamp;
@@ -213,6 +214,7 @@ public class MatchManager : NetworkBehaviour
     // 服务器启动
     public override void OnStartServer()
     {
+        CacheSpawnPoints();
         ChangeState(RoomState.Waiting);
     }
     // 客户端连接
@@ -357,9 +359,34 @@ public class MatchManager : NetworkBehaviour
 
         yield return new WaitUntil(() => NetworkTime.time >= generateEndTimestamp);
 
+        
         SpawnPlayers();
         ChangeState(RoomState.Playing);
         matchFlowRoutine = null;
+        SpawnPickups();
+    }
+
+    void SpawnPickups()
+    {
+        if (spawnPoints == null || spawnPoints.Length == 0)
+            return;
+
+        // 1. 随机一个出生点
+        Transform point =
+            spawnPoints[Random.Range(0, spawnPoints.Length)];
+
+        // 2. 随机一个类型
+        PickupType type =
+            (PickupType)Random.Range(0, System.Enum.GetValues(typeof(PickupType)).Length);
+
+        // 3. 生成唯一道具
+        GameObject obj =
+            Instantiate(pickupPrefab, point.position, Quaternion.identity);
+
+        PickupItem item = obj.GetComponent<PickupItem>();
+        item.pickupType = type;
+
+        NetworkServer.Spawn(obj);
     }
 
     void SpawnPlayers()

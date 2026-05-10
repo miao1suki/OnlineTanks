@@ -15,11 +15,18 @@ public class PlayerController : NetworkBehaviour
     public Transform firePoint;
     public PlayerHitBox hitBox;
 
+    public GameObject laserDotPrefab;   // Inspector 拖入
+    public float laserDotLife = 0.3f;
+
     [SyncVar(hook = nameof(OnAliveChanged))]
     public bool isAlive = true;
 
     [SyncVar(hook = nameof(OnHostChanged))]
     public bool isHostPlayer;
+
+    [SyncVar(hook = nameof(OnFireModeChanged))]
+    public FireMode currentFireMode = FireMode.Normal;
+    bool isBursting;
 
     uint shotSeq; // 只在服务器递增即可
 
@@ -97,10 +104,7 @@ public class PlayerController : NetworkBehaviour
             //播放射击音频
             AudioEffectManager.Instance?.PlayShoot();
 
-            CmdFire(
-                firePoint.position,
-                look
-            );
+            CmdTryFire(firePoint.position, look);
         }
     }
     // 统一初始化函数
@@ -123,6 +127,12 @@ public class PlayerController : NetworkBehaviour
         foreach (var s in sprites)
             s.enabled = aliveState;
     }
+
+    void OnFireModeChanged(FireMode oldMode, FireMode newMode)
+    {
+        Debug.Log($"武器模式切换: {newMode}");
+    }
+
     void OnHostChanged(bool oldValue, bool newValue)
     {
         RoomCanvasController.Instance?.RefreshPlayerList(
@@ -163,6 +173,9 @@ public class PlayerController : NetworkBehaviour
         rb.linearVelocity = Vector2.zero;
 
         rb.simulated = false;
+
+        currentFireMode = FireMode.Normal;
+
         foreach (var s in sprites)
         {
             s.enabled = false;
@@ -175,6 +188,10 @@ public class PlayerController : NetworkBehaviour
     public void Respawn(Vector3 pos)
     {
         if (!isServer) return;
+
+        // 重置局内武器状态
+        currentFireMode = FireMode.Normal;
+        isBursting = false;
 
         isAlive = true;
         SetSpawnState(pos, true);
@@ -262,41 +279,170 @@ public class PlayerController : NetworkBehaviour
         MatchManager.Instance?.UnregisterPlayer(this);
     }
 
-
     [Command]
-    void CmdFire(Vector2 pos, Vector2 dir)
+    void CmdTryFire(Vector2 pos, Vector2 dir)
     {
-        // shotId 由服务器分配
+        switch (currentFireMode)
+        {
+            case FireMode.Normal:
+                ServerFireSingle(pos, dir, false);
+                break;
+
+            case FireMode.Triple:
+                FireTriple(pos, dir);
+                break;
+
+            case FireMode.Burst:
+                if (!isBursting)
+                    StartCoroutine(BurstRoutine(pos, dir));
+                break;
+
+            case FireMode.BigBullet:
+                ServerFireSingle(pos, dir, true);
+                break;
+
+            case FireMode.Laser:
+                FireLaser(pos, dir);
+                break;
+        }
+    }
+
+    void ServerFireSingle(Vector2 pos, Vector2 dir, bool big)
+    {
         uint shotId = ++shotSeq;
 
-        // 服务器生成子弹（用于服务器物理）
         GameObject bullet = BulletPool.Instance.GetBullet(netId);
+
         bullet.transform.position = pos;
-        bullet.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
+        bullet.transform.rotation =
+            Quaternion.LookRotation(Vector3.forward, dir);
+
         bullet.SetActive(true);
 
         Bullet b = bullet.GetComponent<Bullet>();
+
         b.Init(netId, shotId);
+
+        // 巨型子弹免疫自伤
+        b.isBigBullet = big;
+        b.ignoreSelfHit = big;
+
+
         BulletPool.Instance.RegisterActive(b);
+
         b.Launch(dir);
 
-        // 通知客户端生成显示子弹（带 shotId）
-        RpcSpawnBullet(pos, dir, netId, shotId);
+        RpcSpawnBullet(
+            pos,
+            dir,
+            netId,
+            shotId,
+            big
+        );
+    }
+
+    void FireTriple(Vector2 pos, Vector2 dir)
+    {
+        Vector2 leftDir =
+            Quaternion.Euler(0, 0, 15) * dir;
+
+        Vector2 rightDir =
+            Quaternion.Euler(0, 0, -15) * dir;
+
+        ServerFireSingle(pos, dir, false);
+
+        ServerFireSingle(
+            pos + leftDir * 0.3f,
+            leftDir,
+            false
+        );
+
+        ServerFireSingle(
+            pos + rightDir * 0.3f,
+            rightDir,
+            false
+        );
+    }
+
+
+    IEnumerator BurstRoutine(Vector2 pos, Vector2 dir)
+    {
+        isBursting = true;
+
+        float timer = 1f;
+
+        while (timer > 0)
+        {
+            ServerFireSingle(
+                firePoint.position,
+                dir,
+                false
+            );
+
+            yield return new WaitForSeconds(0.05f);
+
+            timer -= 0.05f;
+        }
+
+        isBursting = false;
+    }
+
+    void FireLaser(Vector2 pos, Vector2 dir)
+    {
+        GameObject bullet =
+            BulletPool.Instance.GetLaser(netId);
+
+        bullet.transform.position = pos;
+
+        bullet.SetActive(true);
+
+        LaserBullet laser =
+            bullet.GetComponent<LaserBullet>();
+
+        laser.Fire(dir ,netId ,this);
     }
 
     [ClientRpc]
-    void RpcSpawnBullet(Vector2 pos, Vector2 dir, uint ownerId, uint shotId)
+    public void RpcRenderLaser(Vector2[] points)
+    {
+        if (points == null) return;
+
+        foreach (var p in points)
+            LaserDotPool.Instance?.Spawn(p, 0.3f);
+    }
+
+
+    [ClientRpc]
+    void RpcSpawnBullet(
+     Vector2 pos,
+     Vector2 dir,
+     uint ownerId,
+     uint shotId,
+     bool big)
     {
         if (isServer) return;
 
-        GameObject bullet = BulletPool.Instance.GetBullet(ownerId);
+        GameObject bullet =
+            BulletPool.Instance.GetBullet(ownerId);
+
         bullet.transform.position = pos;
-        bullet.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
+
+        bullet.transform.rotation =
+            Quaternion.LookRotation(
+                Vector3.forward,
+                dir
+            );
+
         bullet.SetActive(true);
 
         Bullet b = bullet.GetComponent<Bullet>();
+
         b.Init(ownerId, shotId);
+
+        b.isBigBullet = big;
+
         BulletPool.Instance.RegisterActive(b);
+
         b.Launch(dir);
     }
 
