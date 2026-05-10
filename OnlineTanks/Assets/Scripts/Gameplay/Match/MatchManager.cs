@@ -371,17 +371,17 @@ public class MatchManager : NetworkBehaviour
         if (spawnPoints == null || spawnPoints.Length == 0)
             return;
 
-        // 1. 随机一个出生点
-        Transform point =
-            spawnPoints[Random.Range(0, spawnPoints.Length)];
+        // 5等概率：0=空(不刷)，1~4=刷4种道具
+        int roll = Random.Range(0, 5);
+        if (roll == 0)
+            return; // 这局不刷道具
 
-        // 2. 随机一个类型
-        PickupType type =
-            (PickupType)Random.Range(0, System.Enum.GetValues(typeof(PickupType)).Length);
+        Transform point = spawnPoints[Random.Range(0, spawnPoints.Length)];
 
-        // 3. 生成唯一道具
-        GameObject obj =
-            Instantiate(pickupPrefab, point.position, Quaternion.identity);
+        // roll: 1~4 -> 映射到 PickupType: 0~3
+        PickupType type = (PickupType)(roll - 1);
+
+        GameObject obj = Instantiate(pickupPrefab, point.position, Quaternion.identity);
 
         PickupItem item = obj.GetComponent<PickupItem>();
         item.pickupType = type;

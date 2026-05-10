@@ -9683,6 +9683,11 @@ MonoBehaviour:
   explosionClip: {fileID: 8300000, guid: d515214924d79d442a2d718f8f32e066, type: 3}
   shootClip: {fileID: 8300000, guid: 9194aceeea6cf2745958730590376505, type: 3}
   minInterval: 0.2
+  pickupClip: {fileID: 8300000, guid: 3848e18d697c2fe45bf1b02f45456524, type: 3}
+  shootTripleClip: {fileID: 0}
+  shootBurstClip: {fileID: 8300000, guid: 798d5620e85a7af48ba3bf1ff6001926, type: 3}
+  shootBigClip: {fileID: 0}
+  shootLaserClip: {fileID: 8300000, guid: 7364c4300d266fe49bc47148c5963b54, type: 3}
 --- !u!1 &1546686154
 GameObject:
   m_ObjectHideFlags: 0

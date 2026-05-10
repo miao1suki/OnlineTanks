@@ -80,6 +80,15 @@ public class PickupItem : NetworkBehaviour
                 break;
         }
 
+        // 播放拾取音效（所有客户端都能听见）
+        RpcPlayPickupSfx();
+
         NetworkServer.Destroy(gameObject);
+    }
+
+    [ClientRpc]
+    void RpcPlayPickupSfx()
+    {
+        AudioEffectManager.Instance?.PlayPickup();
     }
 }

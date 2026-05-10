@@ -102,7 +102,7 @@ public class PlayerController : NetworkBehaviour
             nextFireTime = Time.time + fireCooldown;
 
             //播放射击音频
-            AudioEffectManager.Instance?.PlayShoot();
+            AudioEffectManager.Instance?.PlayShootByMode(currentFireMode);
 
             CmdTryFire(firePoint.position, look);
         }
@@ -332,6 +332,9 @@ public class PlayerController : NetworkBehaviour
 
         b.Launch(dir);
 
+        // 让所有客户端播放“这次发射的武器音效”
+        RpcPlayShootSfx(big ? FireMode.BigBullet : currentFireMode);
+
         RpcSpawnBullet(
             pos,
             dir,
@@ -389,6 +392,9 @@ public class PlayerController : NetworkBehaviour
 
     void FireLaser(Vector2 pos, Vector2 dir)
     {
+        // 激光也广播音效
+        RpcPlayShootSfx(FireMode.Laser);
+
         GameObject bullet =
             BulletPool.Instance.GetLaser(netId);
 
@@ -444,6 +450,15 @@ public class PlayerController : NetworkBehaviour
         BulletPool.Instance.RegisterActive(b);
 
         b.Launch(dir);
+    }
+
+    [ClientRpc]
+    void RpcPlayShootSfx(FireMode mode)
+    {
+        // 本地玩家已经在Update里播过一次了，避免重复
+        if (isLocalPlayer) return;
+
+        AudioEffectManager.Instance?.PlayShootByMode(mode);
     }
 
     Vector2 CalculateLookDirection()
