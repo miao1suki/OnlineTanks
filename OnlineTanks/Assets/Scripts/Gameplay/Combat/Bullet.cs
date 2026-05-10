@@ -32,6 +32,7 @@ public class Bullet : NetworkBehaviour
 
     public void ReturnPool()
     {
+        CancelInvoke();
         rb.linearVelocity = Vector2.zero;
         BulletPool.Instance.ReturnBullet(ownerId, gameObject);
     }

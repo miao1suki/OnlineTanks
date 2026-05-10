@@ -21,6 +21,8 @@ public class PlayerController : NetworkBehaviour
     [SyncVar(hook = nameof(OnHostChanged))]
     public bool isHostPlayer;
 
+    uint shotSeq; // 只在服务器递增即可
+
     PlayerInputHandler input;
     // 统一入口锁
     bool inputLocked = true;
@@ -264,53 +266,38 @@ public class PlayerController : NetworkBehaviour
     [Command]
     void CmdFire(Vector2 pos, Vector2 dir)
     {
-        GameObject bullet =
-            BulletPool.Instance.GetBullet(netId);
+        // shotId 由服务器分配
+        uint shotId = ++shotSeq;
 
+        // 服务器生成子弹（用于服务器物理）
+        GameObject bullet = BulletPool.Instance.GetBullet(netId);
         bullet.transform.position = pos;
-
-        bullet.transform.rotation =
-            Quaternion.LookRotation(
-                Vector3.forward,
-                dir
-            );
-
+        bullet.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
         bullet.SetActive(true);
 
-        bullet.GetComponent<Bullet>()
-            .Launch(dir);
+        Bullet b = bullet.GetComponent<Bullet>();
+        b.Init(netId, shotId);
+        BulletPool.Instance.RegisterActive(b);
+        b.Launch(dir);
 
-        RpcSpawnBullet(
-            pos,
-            dir,
-            netId
-        );
+        // 通知客户端生成显示子弹（带 shotId）
+        RpcSpawnBullet(pos, dir, netId, shotId);
     }
 
     [ClientRpc]
-    void RpcSpawnBullet(
-        Vector2 pos,
-        Vector2 dir,
-        uint ownerId
-    )
+    void RpcSpawnBullet(Vector2 pos, Vector2 dir, uint ownerId, uint shotId)
     {
         if (isServer) return;
 
-        GameObject bullet =
-            BulletPool.Instance.GetBullet(ownerId);
-
+        GameObject bullet = BulletPool.Instance.GetBullet(ownerId);
         bullet.transform.position = pos;
-
-        bullet.transform.rotation =
-            Quaternion.LookRotation(
-                Vector3.forward,
-                dir
-            );
-
+        bullet.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
         bullet.SetActive(true);
 
-        bullet.GetComponent<Bullet>()
-            .Launch(dir);
+        Bullet b = bullet.GetComponent<Bullet>();
+        b.Init(ownerId, shotId);
+        BulletPool.Instance.RegisterActive(b);
+        b.Launch(dir);
     }
 
     Vector2 CalculateLookDirection()
