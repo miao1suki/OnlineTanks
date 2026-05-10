@@ -60,6 +60,10 @@ public class PlayerController : NetworkBehaviour
 
         if (!isLocalPlayer || !isAlive || inputLocked) return;
 
+        // 结算/准备/生成阶段都不允许操作
+        if (MatchManager.Instance == null || MatchManager.Instance.currentState != RoomState.Playing)
+            return;
+
 
         Vector2 move = input.MoveInput;
         Vector2 look = CalculateLookDirection();
@@ -87,6 +91,9 @@ public class PlayerController : NetworkBehaviour
         if (input.FirePressed && Time.time >= nextFireTime)
         {
             nextFireTime = Time.time + fireCooldown;
+
+            //播放射击音频
+            AudioEffectManager.Instance?.PlayShoot();
 
             CmdFire(
                 firePoint.position,
@@ -183,6 +190,18 @@ public class PlayerController : NetworkBehaviour
 
         foreach (var s in sprites)
             s.enabled = newValue;
+
+        // 从活着 -> 死亡：播爆炸特效 + 音效
+        if (oldValue == true && newValue == false)
+        {
+            VFXManager.Instance?.PlayExplosion(
+                transform.position,
+                10f,   // 特效大小
+                2f    // 播放时间
+            );
+
+            AudioEffectManager.Instance?.PlayExplosion();
+        }
     }
 
     [Command]
