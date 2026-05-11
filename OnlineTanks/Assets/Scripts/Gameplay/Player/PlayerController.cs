@@ -182,7 +182,13 @@ public class PlayerController : NetworkBehaviour
         }
 
         if (isServer)
+        {
+            // 所有端震动（死亡震动更大、更久）
+            MatchManager.Instance?.ServerShakeAll(0.65f, 0.85f);
+
             MatchManager.Instance.OnPlayerDead(this);
+        }
+           
     }
 
     public void Respawn(Vector3 pos)
@@ -342,6 +348,11 @@ public class PlayerController : NetworkBehaviour
             shotId,
             big
         );
+
+        if (big)
+        {
+            MatchManager.Instance?.ServerShakeAll(0.5f, 0.42f);
+        }
     }
 
     void FireTriple(Vector2 pos, Vector2 dir)

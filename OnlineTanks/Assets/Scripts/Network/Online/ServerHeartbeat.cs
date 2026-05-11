@@ -36,7 +36,7 @@ public class ServerHeartbeat : MonoBehaviour
 
     IEnumerator SendHeartbeat()
     {
-        string url = "https://62.234.93.20/api/heartbeat";
+        string url = "https://meowgame.cloud/api/heartbeat";
 
         var transport = NetworkManager.singleton.transport;
 
@@ -80,7 +80,7 @@ public class ServerHeartbeat : MonoBehaviour
 
     IEnumerator RemoveRoom()
     {
-        string url = "https://62.234.93.20/api/removeRoom";
+        string url = "https://meowgame.cloud/api/removeRoom";
 
         var transport = NetworkManager.singleton.transport;
 

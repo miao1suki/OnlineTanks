@@ -561,6 +561,20 @@ public class MatchManager : NetworkBehaviour
         CacheSpawnPoints();
     }
 
+    // 服务器调用：触发所有端震动
+    [Server]
+    public void ServerShakeAll(float duration, float strength)
+    {
+        RpcShakeAll(duration, strength);
+    }
+
+    [ClientRpc]
+    void RpcShakeAll(float duration, float strength)
+    {
+        CameraShakeManager.Instance?.Shake(duration, strength);
+    }
+
+
     void CacheSpawnPoints()
     {
         GameObject[] points = GameObject.FindGameObjectsWithTag("SpawnPoint");

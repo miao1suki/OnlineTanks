@@ -54,7 +54,7 @@ public class CreateRoomService : MonoBehaviour
 
     IEnumerator CreateRoomCoroutine(string roomName, int maxPlayers)
     {
-        string url = "https://62.234.93.20/api/createRoom";
+        string url = "https://meowgame.cloud/api/createRoom";
 
         WWWForm form = new WWWForm();
         form.AddField("name", roomName);

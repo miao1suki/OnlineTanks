@@ -21,7 +21,7 @@ public class OnlineService : MonoBehaviour
 
     IEnumerator RequestRoomList()
     {
-        string url = "https://62.234.93.20/api/rooms";
+        string url = "https://meowgame.cloud/api/rooms";
 
         UnityWebRequest www = UnityWebRequest.Get(url);
         www.certificateHandler = new IgnoreSSL();
