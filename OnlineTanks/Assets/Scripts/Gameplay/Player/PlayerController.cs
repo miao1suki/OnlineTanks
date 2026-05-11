@@ -474,11 +474,16 @@ public class PlayerController : NetworkBehaviour
 
     Vector2 CalculateLookDirection()
     {
+#if UNITY_ANDROID || UNITY_IOS
+    // 用坦克朝向当作射击方向（不需要鼠标）
+    float ang = -currentAngle; // 你 rotation 用的是 -currentAngle
+    float rad = ang * Mathf.Deg2Rad;
+    return new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)).normalized;
+#else
         Vector2 mousePos = Mouse.current.position.ReadValue();
-
         Vector2 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
-
         return (worldPos - (Vector2)transform.position).normalized;
+#endif
     }
 
     // 客户端预测

@@ -20,8 +20,22 @@ public class EscMenuController : MonoBehaviour
 
     void Start()
     {
-        input =
-            FindFirstObjectByType<PlayerInputHandler>();
+        PlayerInputHandler[] all =
+    FindObjectsByType<PlayerInputHandler>(
+        FindObjectsSortMode.None
+    );
+
+        foreach (var p in all)
+        {
+            NetworkBehaviour nb =
+                p.GetComponent<NetworkBehaviour>();
+
+            if (nb != null && nb.isLocalPlayer)
+            {
+                input = p;
+                break;
+            }
+        }
     }
 
     void Update()
@@ -34,8 +48,22 @@ public class EscMenuController : MonoBehaviour
 
         if (input == null)
         {
-            input =
-                FindFirstObjectByType<PlayerInputHandler>();
+            PlayerInputHandler[] all =
+    FindObjectsByType<PlayerInputHandler>(
+        FindObjectsSortMode.None
+    );
+
+            foreach (var p in all)
+            {
+                NetworkBehaviour nb =
+                    p.GetComponent<NetworkBehaviour>();
+
+                if (nb != null && nb.isLocalPlayer)
+                {
+                    input = p;
+                    break;
+                }
+            }
 
             return;
         }
@@ -46,7 +74,7 @@ public class EscMenuController : MonoBehaviour
         }
     }
 
-    void ToggleMenu()
+    public void ToggleMenu()
     {
         opened = !opened;
 
