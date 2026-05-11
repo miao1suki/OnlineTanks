@@ -96,8 +96,16 @@ public class MatchManager : NetworkBehaviour
 
     public PlayerController GetPlayer(uint netId)
     {
-        if (NetworkClient.spawned.TryGetValue(netId, out var id))
-            return id.GetComponent<PlayerController>();
+        if (isServer)
+        {
+            if (NetworkServer.spawned.TryGetValue(netId, out var id))
+                return id.GetComponent<PlayerController>();
+        }
+        else
+        {
+            if (NetworkClient.spawned.TryGetValue(netId, out var id))
+                return id.GetComponent<PlayerController>();
+        }
 
         return null;
     }
