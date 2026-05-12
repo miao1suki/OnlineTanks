@@ -493,6 +493,9 @@ public class MatchManager : NetworkBehaviour
 
         try
         {
+            // µÈ´ý»÷É±±íÏÖ
+            yield return new WaitForSeconds(1.8f);
+
             ChangeState(RoomState.Settlement);
 
             if (winner != null)

@@ -37,6 +37,17 @@ public class PlayerController : NetworkBehaviour
     [SyncVar] Vector3 syncPos;
     [SyncVar] Quaternion syncRot;
 
+    [Header("Laser (Safe Raycast)")]
+    public float laserMaxDistance = 60f;     // 激光总长度上限（越大越长）
+    public int laserMaxBounces = 30;         // 最大反射次数（越大越能反射）
+    public float laserRenderTime = 0.25f;    // 显示时间
+    public float laserHitRadius = 0.3f;      // 命中半径
+
+    public LayerMask laserWallMask;          // 墙/反射面 Layer
+    public LayerMask laserHitMask;           // PlayerHitBox Layer（只打这个层）
+    public float laserVisualScale = 1.0f;    // 绘制单格大小
+    public float laserVisualSpacing = 0.18f; // 绘制单格距离
+
 
     float currentAngle;
     float turnVelocity;
@@ -423,29 +434,59 @@ public class PlayerController : NetworkBehaviour
 
     void FireLaser(Vector2 pos, Vector2 dir)
     {
-        // 激光也广播音效
-        RpcPlayShootSfx(FireMode.Laser);
+        // 只允许服务器执行（CmdTryFire本来就在服务器，但这里再保险）
+        if (!NetworkServer.active) return;
 
-        GameObject bullet =
-            BulletPool.Instance.GetLaser(netId);
+        // 1) 服务器计算反射路径（拐点数组）
+        var corners = BuildLaserCorners(
+            start: pos,
+            dir: dir.normalized,
+            maxDistance: laserMaxDistance,
+            maxBounces: laserMaxBounces,
+            wallMask: laserWallMask
+        );
 
-        bullet.transform.position = pos;
+        // 2) 服务器沿每一段做命中判定（CircleCast / Raycast均可）
+        //    命中只认 PlayerHitBox（laserHitMask）
+        var hitBoxes = DetectLaserHits(
+            corners,
+            laserHitRadius,
+            laserHitMask
+        );
 
-        bullet.SetActive(true);
+        // 3) 服务器结算击杀
+        foreach (var hb in hitBoxes)
+        {
+            if (hb == null) continue;
 
-        LaserBullet laser =
-            bullet.GetComponent<LaserBullet>();
+            // 通过HitBox的ownerId找到玩家（HitBox是独立物体时最稳）
+            uint targetId = hb.ownerId;
 
-        laser.Fire(dir ,netId ,this);
-    }
+            if (NetworkServer.spawned.TryGetValue(targetId, out NetworkIdentity id))
+            {
+                var pc = id.GetComponent<PlayerController>();
+                if (pc != null)
+                {
+                    // 如果你不希望激光自杀（可选）
+                    if (pc.netId == netId) continue;
 
-    [ClientRpc]
-    public void RpcRenderLaser(Vector2[] points)
-    {
-        if (points == null) return;
+                    pc.Die();
+                }
+                else
+                {
+                    Debug.LogWarning($"[LASER_SAFE] 找到Identity但没有PlayerController: ownerId={targetId}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[LASER_SAFE] NetworkServer.spawned里找不到ownerId={targetId}");
+            }
+        }
 
-        foreach (var p in points)
-            LaserDotPool.Instance?.Spawn(p, 0.3f);
+        // 4) 广播渲染（只发少量拐点）
+        RpcRenderLaserSafe(corners, laserRenderTime);
+
+        Debug.Log($"[LASER_SAFE] corners={corners.Length} hits={hitBoxes.Count} owner={netId}");
     }
 
 
@@ -603,6 +644,121 @@ currentAngle -= move.x * -turnTorque * Time.deltaTime;
 
         float speed = boosting ? sprintSpeed : moveSpeed;
         rb.linearVelocity = moveDir * speed;
+    }
+
+    Vector2[] BuildLaserCorners(
+    Vector2 start,
+    Vector2 dir,
+    float maxDistance,
+    int maxBounces,
+    LayerMask wallMask)
+    {
+        List<Vector2> pts = new List<Vector2>(maxBounces + 2);
+        pts.Add(start);
+
+        Vector2 pos = start;
+        Vector2 d = dir;
+
+        float remain = Mathf.Max(0.01f, maxDistance);
+        const float EPS = 0.02f; // 防止卡在墙里反复击中同一点
+
+        for (int i = 0; i < maxBounces && remain > 0.01f; i++)
+        {
+            RaycastHit2D hit = Physics2D.Raycast(pos, d, remain, wallMask);
+
+            if (!hit.collider)
+            {
+                pts.Add(pos + d * remain);
+                break;
+            }
+
+            pts.Add(hit.point);
+
+            remain -= hit.distance;
+            if (remain <= 0.01f) break;
+
+            // 反射
+            d = Vector2.Reflect(d, hit.normal).normalized;
+
+            // 从碰撞点沿反射方向推进一点，避免下一次Raycast立刻又打回同一面
+            pos = hit.point + d * EPS;
+        }
+
+        // 如果只产生一个点（异常情况），保证至少两点
+        if (pts.Count < 2) pts.Add(start + dir * 0.5f);
+
+        return pts.ToArray();
+    }
+
+    List<PlayerHitBox> DetectLaserHits(
+        Vector2[] corners,
+        float radius,
+        LayerMask hitMask)
+    {
+        HashSet<PlayerHitBox> set = new HashSet<PlayerHitBox>();
+        if (corners == null || corners.Length < 2) return new List<PlayerHitBox>();
+
+        for (int i = 1; i < corners.Length; i++)
+        {
+            Vector2 a = corners[i - 1];
+            Vector2 b = corners[i];
+            Vector2 delta = b - a;
+            float dist = delta.magnitude;
+
+            if (dist < 0.0001f) continue;
+
+            Vector2 dir = delta / dist;
+
+            // CircleCastAll：覆盖“粗激光”
+            var hits = Physics2D.CircleCastAll(a, radius, dir, dist, hitMask);
+
+            foreach (var h in hits)
+            {
+                if (h.collider == null) continue;
+                var hb = h.collider.GetComponent<PlayerHitBox>();
+                if (hb != null) set.Add(hb);
+            }
+        }
+
+        return new List<PlayerHitBox>(set);
+    }
+
+    [ClientRpc]
+    void RpcRenderLaserSafe(Vector2[] corners, float ttl)
+    {
+        if (corners == null || corners.Length < 2) return;
+
+        // 客户端本地做“加密”，想多密都行，不会影响网络
+        float spacing = Mathf.Max(0.03f, laserVisualSpacing);
+        Vector2[] dense = DensifyCorners(corners, spacing);
+
+        foreach (var p in dense)
+            LaserDotPool.Instance?.Spawn(p, ttl);
+    }
+
+    static Vector2[] DensifyCorners(Vector2[] corners, float spacing)
+    {
+        if (corners == null || corners.Length < 2) return corners ?? new Vector2[0];
+        spacing = Mathf.Max(0.01f, spacing);
+
+        List<Vector2> result = new List<Vector2>(corners.Length * 8);
+        result.Add(corners[0]);
+
+        for (int i = 1; i < corners.Length; i++)
+        {
+            Vector2 a = corners[i - 1];
+            Vector2 b = corners[i];
+            float dist = Vector2.Distance(a, b);
+            if (dist < 0.0001f) continue;
+
+            int steps = Mathf.CeilToInt(dist / spacing);
+            for (int s = 1; s <= steps; s++)
+            {
+                float t = (float)s / steps;
+                result.Add(Vector2.Lerp(a, b, t));
+            }
+        }
+        return result.ToArray();
     }
 
     void LateUpdate()

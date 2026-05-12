@@ -8,16 +8,11 @@ public class BulletPool : MonoBehaviour
     [Header("普通子弹预制体")]
     public GameObject normalBulletPrefab;
 
-    [Header("激光子弹预制体")]
-    public GameObject laserBulletPrefab;
 
     public int bulletsPerPlayer = 20;
 
     // 普通子弹池
     Dictionary<uint, Queue<GameObject>> bulletPools = new();
-
-    // 激光池
-    Dictionary<uint, Queue<GameObject>> laserPools = new();
 
     // 每个玩家一个父节点
     Dictionary<uint, Transform> poolParents = new();
@@ -92,50 +87,6 @@ public class BulletPool : MonoBehaviour
         bulletPools.Add(ownerId, pool);
     }
 
-    //====================================================
-    // 激光池
-    //====================================================
-
-    public GameObject GetLaser(uint ownerId)
-    {
-        if (!laserPools.ContainsKey(ownerId))
-            CreateLaserPool(ownerId);
-
-        Queue<GameObject> pool = laserPools[ownerId];
-
-        if (pool.Count > 0)
-            return pool.Dequeue();
-
-        GameObject extra =
-            Instantiate(
-                laserBulletPrefab,
-                transform
-            );
-
-        extra.SetActive(false);
-
-        return extra;
-    }
-
-    void CreateLaserPool(uint ownerId)
-    {
-        Queue<GameObject> pool = new();
-
-        for (int i = 0; i < 5; i++)
-        {
-            GameObject laser =
-                Instantiate(
-                    laserBulletPrefab,
-                    transform
-                );
-
-            laser.SetActive(false);
-
-            pool.Enqueue(laser);
-        }
-
-        laserPools.Add(ownerId, pool);
-    }
 
     //====================================================
     // 活跃登记
@@ -184,21 +135,7 @@ public class BulletPool : MonoBehaviour
             );
         }
 
-        bullet.SetActive(false);
-
-        // 激光
-        if (bullet.GetComponent<LaserBullet>() != null)
-        {
-            if (!laserPools.ContainsKey(ownerId))
-            {
-                Destroy(bullet);
-                return;
-            }
-
-            laserPools[ownerId].Enqueue(bullet);
-
-            return;
-        }
+        bullet.SetActive(false);  
 
         // 普通子弹
         if (!bulletPools.ContainsKey(ownerId))

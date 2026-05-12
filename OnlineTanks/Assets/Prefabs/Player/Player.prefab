@@ -307,6 +307,18 @@ MonoBehaviour:
   isAlive: 1
   isHostPlayer: 0
   currentFireMode: 0
+  laserMaxDistance: 360
+  laserMaxBounces: 60
+  laserRenderTime: 0.25
+  laserHitRadius: 0.3
+  laserWallMask:
+    serializedVersion: 2
+    m_Bits: 256
+  laserHitMask:
+    serializedVersion: 2
+    m_Bits: 512
+  laserVisualScale: 0.01
+  laserVisualSpacing: 0.03
 --- !u!114 &4393032887002052400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -325,6 +337,7 @@ MonoBehaviour:
   FirePressed: 0
   PausePressed: 0
   SurrenderPressed: 0
+  IsMobileLook: 0
 --- !u!50 &3800262636163555657
 Rigidbody2D:
   serializedVersion: 5
