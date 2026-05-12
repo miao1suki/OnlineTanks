@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputHandler : MonoBehaviour
 {
+    public static PlayerInputHandler Local;
+
     public Vector2 MoveInput;
     public Vector2 LookInput;
 
@@ -11,6 +13,8 @@ public class PlayerInputHandler : MonoBehaviour
     public bool FirePressed;
     public bool PausePressed;
     public bool SurrenderPressed;
+
+    public bool IsMobileLook;
 
     PlayerInput input;
 
@@ -103,5 +107,10 @@ public class PlayerInputHandler : MonoBehaviour
     void OnSurrender(InputAction.CallbackContext ctx)
     {
         SurrenderPressed = true;
+    }
+
+    public void UI_Fire()
+    {
+        FirePressed = true;
     }
 }

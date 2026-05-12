@@ -9,7 +9,7 @@ public class CameraShakeManager : MonoBehaviour
     public Camera targetCamera;
 
     [Header("Mobile Vibration")]
-    public bool enableVibration = true;
+    bool EnableVibration => SettingData.VibrationEnabled;
 
     Transform camTf;
     Vector3 originalPos;
@@ -61,7 +61,7 @@ public class CameraShakeManager : MonoBehaviour
 
         // 手机震动（最简API：无法自定义强度/时长）
 #if UNITY_ANDROID || UNITY_IOS
-if (enableVibration)
+if (EnableVibration)
 {
     UnityEngine.Handheld.Vibrate();
 }

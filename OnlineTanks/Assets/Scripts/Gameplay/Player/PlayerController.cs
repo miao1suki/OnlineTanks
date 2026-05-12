@@ -41,6 +41,8 @@ public class PlayerController : NetworkBehaviour
     float currentAngle;
     float turnVelocity;
 
+    float _nextMoveLog;
+
     Rigidbody2D rb;
     SpriteRenderer[] sprites;
 
@@ -53,6 +55,13 @@ public class PlayerController : NetworkBehaviour
 
     void Start()
     {
+        if (isLocalPlayer)
+        {
+            PlayerInputHandler.Local = input;
+            input.MoveInput = Vector2.zero;
+            input.LookInput = Vector2.zero;
+        }
+
         if (!isLocalPlayer)
         {
             rb.simulated = false;
@@ -77,6 +86,10 @@ public class PlayerController : NetworkBehaviour
         Vector2 move = input.MoveInput;
         Vector2 look = CalculateLookDirection();
 
+        if (Time.unscaledTime >= _nextMoveLog)
+        {
+            _nextMoveLog = Time.unscaledTime + 0.25f;
+        }
         //按B放弃
         if (input.SurrenderPressed)
         {
@@ -126,6 +139,13 @@ public class PlayerController : NetworkBehaviour
 
         foreach (var s in sprites)
             s.enabled = aliveState;
+
+        var joystick = FindFirstObjectByType<MobileTankJoystick>();
+
+        if (joystick != null)
+        {
+            joystick.ResetJoystick();
+        }
     }
 
     void OnFireModeChanged(FireMode oldMode, FireMode newMode)
@@ -475,10 +495,22 @@ public class PlayerController : NetworkBehaviour
     Vector2 CalculateLookDirection()
     {
 #if UNITY_ANDROID || UNITY_IOS
-    // 用坦克朝向当作射击方向（不需要鼠标）
-    float ang = -currentAngle; // 你 rotation 用的是 -currentAngle
-    float rad = ang * Mathf.Deg2Rad;
-    return new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)).normalized;
+        // 手机：优先使用摇杆朝向
+        if (input.IsMobileLook &&
+            input.LookInput.sqrMagnitude > 0.001f)
+        {
+            return input.LookInput.normalized;
+        }
+
+        // 没输入时保持当前朝向
+        float ang = -currentAngle;
+        float rad = ang * Mathf.Deg2Rad;
+
+        return new Vector2(
+            Mathf.Sin(rad),
+            Mathf.Cos(rad)
+        ).normalized;
+
 #else
         Vector2 mousePos = Mouse.current.position.ReadValue();
         Vector2 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
@@ -505,7 +537,9 @@ public class PlayerController : NetworkBehaviour
             );
         }
 
-        currentAngle -= move.x * -turnTorque * Time.deltaTime;
+#if !UNITY_ANDROID && !UNITY_IOS
+currentAngle -= move.x * -turnTorque * Time.deltaTime;
+#endif
 
         transform.rotation =
             Quaternion.Euler(0, 0, -currentAngle);
@@ -550,7 +584,9 @@ public class PlayerController : NetworkBehaviour
         }
 
         //A/D施加额外扭矩
-        currentAngle -= move.x * -turnTorque * Time.deltaTime;
+#if !UNITY_ANDROID && !UNITY_IOS
+currentAngle -= move.x * -turnTorque * Time.deltaTime;
+#endif
 
         transform.rotation = Quaternion.Euler(
             0,

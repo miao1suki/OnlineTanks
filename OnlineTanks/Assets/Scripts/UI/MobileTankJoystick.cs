@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+
+[DefaultExecutionOrder(-200)]
 public class MobileTankJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
 {
     [Header("UI")]
@@ -32,12 +34,33 @@ public class MobileTankJoystick : MonoBehaviour, IPointerDownHandler, IDragHandl
 
     void Update()
     {
-        // 平滑输出，手感更稳
-        current = Vector2.Lerp(current, raw, smooth * Time.unscaledDeltaTime);
+        if (targetInput == null)
+            targetInput = PlayerInputHandler.Local;
 
-        // 写入输入：X=转向，Y=前后
+        current = Vector2.Lerp(
+            current,
+            raw,
+            smooth * Time.unscaledDeltaTime
+        );
+
         if (targetInput != null)
-            targetInput.MoveInput = current;
+        {
+            float strength =
+                Mathf.Clamp01(current.magnitude);
+
+            // 只用Y表示前进力度
+            targetInput.MoveInput =
+                new Vector2(0, strength);
+
+            // 摇杆方向 = 坦克朝向
+            if (current.sqrMagnitude > 0.01f)
+            {
+                targetInput.LookInput =
+                    current.normalized;
+
+                targetInput.IsMobileLook = true;
+            }
+        }
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -75,25 +98,38 @@ public class MobileTankJoystick : MonoBehaviour, IPointerDownHandler, IDragHandl
     {
         raw = Vector2.zero;
 
+        if (targetInput != null)
+        {
+            targetInput.MoveInput = Vector2.zero;
+        }
+
         if (handle != null)
             handle.anchoredPosition = Vector2.zero;
     }
 
     void TryAutoBind()
     {
-        if (targetInput != null) return;
+        // 永远绑定到本地玩家的输入
+        if (targetInput == null)
+            targetInput = PlayerInputHandler.Local;
+    }
 
-        // 只绑定本地玩家
-        // PlayerInputHandler 不继承 NetworkBehaviour，所以用 FindObjectsOfType 找
-        var inputs = Object.FindObjectsByType<PlayerInputHandler>(FindObjectsSortMode.None);
-        foreach (var i in inputs)
+    public void ResetJoystick()
+    {
+        raw = Vector2.zero;
+        current = Vector2.zero;
+
+        if (handle != null)
+            handle.anchoredPosition = Vector2.zero;
+
+        if (targetInput != null)
         {
-            var pc = i.GetComponent<PlayerController>();
-            if (pc != null && pc.isLocalPlayer)
-            {
-                targetInput = i;
-                break;
-            }
+            targetInput.MoveInput = Vector2.zero;
+
+            // 重置朝向为正上
+            targetInput.LookInput = Vector2.up;
+
+            targetInput.IsMobileLook = true;
         }
     }
 }
