@@ -1990,7 +1990,7 @@ MonoBehaviour:
   - {fileID: 1332343683}
   - {fileID: 559592073}
   - {fileID: 1594457217}
-  - {fileID: 1392464165}
+  - {fileID: 0}
   - {fileID: 1116111184}
   - {fileID: 1692786926}
   - {fileID: 1521687156}
@@ -10029,52 +10029,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1356748539}
   m_CullTransparentMesh: 1
---- !u!1 &1392464165
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1392464167}
-  - component: {fileID: 1392464166}
-  m_Layer: 0
-  m_Name: LaserDotPool
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1392464166
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1392464165}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7617013bc4a8f88429cc5ad194454e47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LaserDotPool
-  laserDotPrefab: {fileID: 723091682928860756, guid: af19aa89a0b7eb6449e6a9a870350dfb, type: 3}
-  prewarm: 1000
---- !u!4 &1392464167
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1392464165}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1398854405
 GameObject:
   m_ObjectHideFlags: 0
@@ -11525,7 +11479,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BulletPool
   normalBulletPrefab: {fileID: 8234219547061203245, guid: e3ed8daccf8ca494ab49c9eb76681e98, type: 3}
-  laserBulletPrefab: {fileID: 6385682877765844007, guid: 24808e1e37d16914285e9a09fbfe2790, type: 3}
   bulletsPerPlayer: 20
 --- !u!4 &1594457219
 Transform:
@@ -15534,6 +15487,5 @@ SceneRoots:
   - {fileID: 1332343685}
   - {fileID: 1116111187}
   - {fileID: 1594457219}
-  - {fileID: 1392464167}
   - {fileID: 135195179}
   - {fileID: 128389859}

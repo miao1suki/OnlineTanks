@@ -317,7 +317,7 @@ MonoBehaviour:
   laserHitMask:
     serializedVersion: 2
     m_Bits: 512
-  laserVisualScale: 0.01
+  laserVisualScale: 0.6
   laserVisualSpacing: 0.03
 --- !u!114 &4393032887002052400
 MonoBehaviour:

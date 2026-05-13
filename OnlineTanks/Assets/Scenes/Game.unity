@@ -7701,6 +7701,52 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &284782835
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 284782837}
+  - component: {fileID: 284782836}
+  m_Layer: 0
+  m_Name: LaserLinePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &284782836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 284782835}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13165770d59e23b4ebf181a1d6d30690, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LaserLinePool
+  prefab: {fileID: 370002351642123073, guid: d4c97a763d5cd3a44bf148716cab3a39, type: 3}
+  prewarm: 8
+--- !u!4 &284782837
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 284782835}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.33934, y: 8.16167, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &290664702
 GameObject:
   m_ObjectHideFlags: 0
@@ -22412,7 +22458,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraShakeManager
   targetCamera: {fileID: 1206319147}
-  enableVibration: 1
 --- !u!4 &940116808
 Transform:
   m_ObjectHideFlags: 0
@@ -51705,3 +51750,4 @@ SceneRoots:
   - {fileID: 1935520327}
   - {fileID: 538199615}
   - {fileID: 1123174051}
+  - {fileID: 284782837}

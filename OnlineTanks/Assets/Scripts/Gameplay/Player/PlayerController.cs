@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Profiling;
 
 public class PlayerController : NetworkBehaviour
 {
@@ -15,8 +16,6 @@ public class PlayerController : NetworkBehaviour
     public Transform firePoint;
     public PlayerHitBox hitBox;
 
-    public GameObject laserDotPrefab;   // Inspector 拖入
-    public float laserDotLife = 0.3f;
 
     [SyncVar(hook = nameof(OnAliveChanged))]
     public bool isAlive = true;
@@ -45,8 +44,10 @@ public class PlayerController : NetworkBehaviour
 
     public LayerMask laserWallMask;          // 墙/反射面 Layer
     public LayerMask laserHitMask;           // PlayerHitBox Layer（只打这个层）
-    public float laserVisualScale = 1.0f;    // 绘制单格大小
-    public float laserVisualSpacing = 0.18f; // 绘制单格距离
+    public float laserVisualScale = 1.0f;    // 绘制激光粗细
+
+    readonly List<RaycastHit2D> _castHits = new List<RaycastHit2D>(32);
+    ContactFilter2D _laserHitFilter;
 
 
     float currentAngle;
@@ -62,6 +63,11 @@ public class PlayerController : NetworkBehaviour
         input = GetComponent<PlayerInputHandler>();
         rb = GetComponent<Rigidbody2D>();
         sprites = GetComponentsInChildren<SpriteRenderer>();
+
+        _laserHitFilter = new ContactFilter2D();
+        _laserHitFilter.useLayerMask = true;
+        _laserHitFilter.layerMask = laserHitMask;
+        _laserHitFilter.useTriggers = true;
     }
 
     void Start()
@@ -698,24 +704,36 @@ currentAngle -= move.x * -turnTorque * Time.deltaTime;
         HashSet<PlayerHitBox> set = new HashSet<PlayerHitBox>();
         if (corners == null || corners.Length < 2) return new List<PlayerHitBox>();
 
+        // 确保filter的mask是最新的（你可能会在Inspector改）
+        _laserHitFilter.layerMask = hitMask;
+
         for (int i = 1; i < corners.Length; i++)
         {
             Vector2 a = corners[i - 1];
             Vector2 b = corners[i];
             Vector2 delta = b - a;
             float dist = delta.magnitude;
-
             if (dist < 0.0001f) continue;
 
             Vector2 dir = delta / dist;
 
-            // CircleCastAll：覆盖“粗激光”
-            var hits = Physics2D.CircleCastAll(a, radius, dir, dist, hitMask);
+            _castHits.Clear();
 
-            foreach (var h in hits)
+            int count = Physics2D.CircleCast(
+                a,
+                radius,
+                dir,
+                _laserHitFilter,
+                _castHits,
+                dist
+            );
+
+            for (int k = 0; k < count; k++)
             {
-                if (h.collider == null) continue;
-                var hb = h.collider.GetComponent<PlayerHitBox>();
+                var col = _castHits[k].collider;
+                if (col == null) continue;
+
+                var hb = col.GetComponent<PlayerHitBox>();
                 if (hb != null) set.Add(hb);
             }
         }
@@ -726,40 +744,15 @@ currentAngle -= move.x * -turnTorque * Time.deltaTime;
     [ClientRpc]
     void RpcRenderLaserSafe(Vector2[] corners, float ttl)
     {
+        Debug.Log($"[LASER_RENDER] corners={corners?.Length ?? 0} monoUsed={Profiler.GetMonoUsedSizeLong() / 1024f / 1024f:F1}MB");
+
         if (corners == null || corners.Length < 2) return;
 
-        // 客户端本地做“加密”，想多密都行，不会影响网络
-        float spacing = Mathf.Max(0.03f, laserVisualSpacing);
-        Vector2[] dense = DensifyCorners(corners, spacing);
-
-        foreach (var p in dense)
-            LaserDotPool.Instance?.Spawn(p, ttl);
+        // 用线渲染，不再密集点阵
+        float width = Mathf.Max(0.02f, laserVisualScale); // 用 laserVisualScale 当线宽
+        LaserLinePool.Instance?.Draw(corners, ttl, width);
     }
 
-    static Vector2[] DensifyCorners(Vector2[] corners, float spacing)
-    {
-        if (corners == null || corners.Length < 2) return corners ?? new Vector2[0];
-        spacing = Mathf.Max(0.01f, spacing);
-
-        List<Vector2> result = new List<Vector2>(corners.Length * 8);
-        result.Add(corners[0]);
-
-        for (int i = 1; i < corners.Length; i++)
-        {
-            Vector2 a = corners[i - 1];
-            Vector2 b = corners[i];
-            float dist = Vector2.Distance(a, b);
-            if (dist < 0.0001f) continue;
-
-            int steps = Mathf.CeilToInt(dist / spacing);
-            for (int s = 1; s <= steps; s++)
-            {
-                float t = (float)s / steps;
-                result.Add(Vector2.Lerp(a, b, t));
-            }
-        }
-        return result.ToArray();
-    }
 
     void LateUpdate()
     {

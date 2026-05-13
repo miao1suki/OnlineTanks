@@ -76,8 +76,11 @@ public class NetworkManagerCustom : NetworkManager
     // 客户端断开连接
     public override void OnClientDisconnect()
     {
+        Debug.LogWarning("[NET][ClientDisconnect] local client disconnected");
+
         base.OnClientDisconnect();
 
+        // 你原来的逻辑
         if (NetworkServer.active && NetworkClient.active)
             return;
 
@@ -103,13 +106,21 @@ public class NetworkManagerCustom : NetworkManager
     }
     public override void OnServerDisconnect(NetworkConnectionToClient conn)
     {
+        uint netId = conn.identity != null ? conn.identity.netId : 0;
+        Debug.LogWarning($"[NET][ServerDisconnect] connId={conn.connectionId} netId={netId} addr={conn.address}");
+
         if (conn.identity != null)
         {
-            PlayerController player =
-                conn.identity.GetComponent<PlayerController>();
-
+            PlayerController player = conn.identity.GetComponent<PlayerController>();
             if (player != null)
             {
+                // 先把 HitBox 一起销毁
+                if (player.hitBox != null && player.hitBox.gameObject != null && player.hitBox.isServer)
+                {
+                    NetworkServer.Destroy(player.hitBox.gameObject);
+                    player.hitBox = null;
+                }
+
                 MatchManager.Instance.UnregisterPlayer(player);
             }
         }
@@ -187,6 +198,14 @@ public class NetworkManagerCustom : NetworkManager
     public struct ServerRejectMessage : NetworkMessage
     {
         public string reason;
+    }
+
+    // 获取断线信息调试
+
+    public override void OnClientError(TransportError error, string reason)
+    {
+        Debug.LogError($"[NET][ClientError] error={error} reason={reason}");
+        base.OnClientError(error, reason);
     }
 }
 
